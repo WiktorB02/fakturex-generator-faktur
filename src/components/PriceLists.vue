@@ -30,16 +30,16 @@
       <div class="form-grid">
         <label>
           Produkt
-          <select v-model="itemForm.productName">
+          <select v-model="itemForm.productId">
             <option value="">Wybierz produkt</option>
-            <option v-for="item in inventory" :key="item.id" :value="item.name">
+            <option v-for="item in inventory" :key="item.id" :value="item.id">
               {{ item.name }}
             </option>
           </select>
         </label>
         <label>
           Cena netto
-          <input v-model.number="itemForm.price" type="number" min="0" step="0.01" />
+          <input v-model="itemForm.price" type="text" inputmode="decimal" placeholder="0,00" />
         </label>
       </div>
       <button class="ghost-btn" @click="addItem">Dodaj pozycję</button>
@@ -54,8 +54,8 @@
         </thead>
         <tbody>
           <tr v-for="(item, index) in form.items" :key="index">
-            <td>{{ item.productName }}</td>
-            <td>{{ item.price.toFixed(2) }}</td>
+            <td>{{ item.productName || inventory.find((entry) => entry.id === item.productId)?.name || '—' }}</td>
+            <td>{{ Number(item.price ?? 0).toFixed(2) }}</td>
             <td class="actions">
               <button class="danger-btn" @click="removeItem(index)">Usuń</button>
             </td>
@@ -125,8 +125,8 @@ const form = ref({
 })
 
 const itemForm = ref({
-  productName: '',
-  price: 0
+  productId: '',
+  price: ''
 })
 
 const loadLists = () => {
@@ -140,12 +140,27 @@ const toggleForm = () => {
 }
 
 const addItem = () => {
-  if (!itemForm.value.productName) return
-  form.value.items.push({
-    productName: itemForm.value.productName,
-    price: Number(itemForm.value.price || 0)
-  })
-  itemForm.value = { productName: '', price: 0 }
+  if (!itemForm.value.productId) return
+  const product = inventory.value.find((entry) => entry.id === itemForm.value.productId)
+  if (!product) return
+  const rawPrice = String(itemForm.value.price ?? '').replace(',', '.')
+  const price = Number(rawPrice)
+  if (!Number.isFinite(price)) return
+  const nextItem = {
+    productId: product.id,
+    productName: product.name,
+    price
+  }
+  const existingIndex = form.value.items.findIndex((entry) =>
+    (nextItem.productId && entry.productId === nextItem.productId) ||
+    entry.productName === nextItem.productName
+  )
+  if (existingIndex >= 0) {
+    form.value.items[existingIndex] = { ...form.value.items[existingIndex], ...nextItem }
+  } else {
+    form.value.items.push(nextItem)
+  }
+  itemForm.value = { productId: '', price: '' }
 }
 
 const removeItem = (index) => {
@@ -166,7 +181,14 @@ const saveList = () => {
 const editList = (list) => {
   editingId.value = list.id
   showForm.value = true
-  form.value = { name: list.name, currency: list.currency, items: list.items || [] }
+  form.value = {
+    name: list.name,
+    currency: list.currency,
+    items: (list.items || []).map((entry) => ({
+      ...entry,
+      price: Number(String(entry.price ?? 0).replace(',', '.')) || 0
+    }))
+  }
 }
 
 const deleteList = (id) => {
@@ -176,7 +198,7 @@ const deleteList = (id) => {
 const resetForm = () => {
   editingId.value = ''
   form.value = { name: '', currency: settings.tax.defaultCurrency, items: [] }
-  itemForm.value = { productName: '', price: 0 }
+  itemForm.value = { productId: '', price: '' }
 }
 
 const goHome = () => {

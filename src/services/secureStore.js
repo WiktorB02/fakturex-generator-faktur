@@ -4,10 +4,39 @@ const DB_NAME = 'fakturex-db'
 const STORE_NAME = 'kv'
 const KEY_STORAGE = 'fakturex_master_key'
 const SALT_STORAGE = 'fakturex_salt'
+const FALLBACK_PREFIX = 'fakturex_fallback_'
 
 let dbInstance = null
 let cache = new Map()
 let cryptoKey = null
+
+const getFallbackKey = (key) => `${FALLBACK_PREFIX}${key}`
+
+const readFallback = (key) => {
+  try {
+    const raw = localStorage.getItem(getFallbackKey(key))
+    if (!raw) return null
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
+const writeFallback = (key, value) => {
+  try {
+    localStorage.setItem(getFallbackKey(key), JSON.stringify(value))
+  } catch {
+    // ignore
+  }
+}
+
+const removeFallback = (key) => {
+  try {
+    localStorage.removeItem(getFallbackKey(key))
+  } catch {
+    // ignore
+  }
+}
 
 const getMasterKey = () => {
   const existing = localStorage.getItem(KEY_STORAGE)
@@ -101,18 +130,30 @@ export const initStore = async () => {
 }
 
 export const getItem = (key, fallback = null) => {
-  if (!cache.has(key)) return fallback
+  if (!cache.has(key)) {
+    const stored = readFallback(key)
+    if (stored !== null) {
+      cache.set(key, stored)
+      return stored
+    }
+    return fallback
+  }
   return cache.get(key)
 }
 
 export const setItem = async (key, value) => {
+  cache.set(key, value)
+  writeFallback(key, value)
+  if (!dbInstance) return
   const encrypted = await encryptValue(value)
   await dbInstance.put(STORE_NAME, encrypted, key)
-  cache.set(key, value)
 }
 
 export const removeItem = async (key) => {
-  await dbInstance.delete(STORE_NAME, key)
+  if (dbInstance) {
+    await dbInstance.delete(STORE_NAME, key)
+  }
+  removeFallback(key)
   cache.delete(key)
 }
 

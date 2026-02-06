@@ -1,5 +1,4 @@
 import { getItem, setItem } from '@/services/secureStore'
-import { pushCollection } from '@/services/sync'
 
 const CONTACTS_KEY = 'contacts'
 
@@ -9,7 +8,6 @@ export const getContacts = () => {
 
 const saveContacts = (contacts) => {
   setItem(CONTACTS_KEY, contacts)
-  pushCollection(CONTACTS_KEY, contacts)
 }
 
 export const addContact = (contact) => {

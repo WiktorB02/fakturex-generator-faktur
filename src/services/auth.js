@@ -1,6 +1,4 @@
 import { getItem, setItem, removeItem } from '@/services/secureStore'
-import { apiPost, apiPut } from '@/services/api'
-import { syncFromBackend } from '@/services/sync'
 
 const AUTH_KEY = 'fakturex_auth'
 const USERS_KEY = 'fakturex_users'
@@ -50,25 +48,12 @@ export const saveUsers = async (users) => {
   await setItem(USERS_KEY, users)
 }
 
-export const updateUserRole = async (userIdOrEmail, role) => {
+export const updateUserRole = async (email, role) => {
   const users = getUsers()
-  const index = users.findIndex(
-    (user) => user.id === userIdOrEmail || user.email === userIdOrEmail
-  )
+  const index = users.findIndex((user) => user.email === email)
   if (index === -1) return users
-
-  const updated = { ...users[index], role }
-  users[index] = updated
+  users[index] = { ...users[index], role }
   await saveUsers(users)
-
-  if (updated.id) {
-    try {
-      await apiPut(`/users/${updated.id}`, updated)
-    } catch {
-      // ignore api errors
-    }
-  }
-
   return users
 }
 
@@ -82,31 +67,25 @@ export const hasRole = (roles = []) => {
   return !!role && roles.includes(role)
 }
 
-export const login = async (email, password) => {
-  try {
-    const response = await apiPost('/auth/login', { email, password })
-    const session = { user: response.user, token: response.token }
-    writeSession(session)
-    await setItem(USERS_KEY, [])
-    await syncFromBackend()
-    return session
-  } catch (error) {
-    const users = getUsers()
-    const matched = users.find((user) => user.email === email && user.password === password)
-    if (!matched) {
-      throw new Error('Nieprawidłowy e-mail lub hasło.')
-    }
-    const session = {
-      user: {
-        name: matched.name,
-        email: matched.email,
-        role: matched.role
-      },
-      token: `demo-${Date.now()}`
-    }
-    writeSession(session)
-    return session
+export const login = (email, password) => {
+  const users = getUsers()
+  const matched = users.find((user) => user.email === email && user.password === password)
+
+  if (!matched) {
+    throw new Error('Nieprawidłowy e-mail lub hasło.')
   }
+
+  const session = {
+    user: {
+      name: matched.name,
+      email: matched.email,
+      role: matched.role
+    },
+    token: `demo-${Date.now()}`
+  }
+
+  writeSession(session)
+  return session
 }
 
 export const logout = () => {

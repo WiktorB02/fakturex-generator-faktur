@@ -1,5 +1,4 @@
 import { getItem, setItem, removeItem } from '@/services/secureStore'
-import { pushCollection } from '@/services/sync'
 
 const DOCUMENTS_KEY = 'documents'
 const COUNTER_KEY = 'documentCounters'
@@ -109,7 +108,6 @@ export const getDocuments = () => {
 
 export const saveDocuments = (documents) => {
   setItem(DOCUMENTS_KEY, documents)
-  pushCollection(DOCUMENTS_KEY, documents)
 }
 
 export const addDocument = (document) => {

@@ -1,5 +1,4 @@
 import { getItem, setItem } from '@/services/secureStore'
-import { pushSettings } from '@/services/sync'
 
 const SETTINGS_KEY = 'settings'
 
@@ -79,9 +78,9 @@ export const defaultSettings = {
     enableCache: true
   },
   mobileUx: {
-    enableMobileMode: true,
-    largeTouchTargets: true,
-    stickyActions: true
+    enableMobileMode: false,
+    largeTouchTargets: false,
+    stickyActions: false
   },
   permissions: {
     admin: {
@@ -152,18 +151,51 @@ export const defaultSettings = {
 }
 
 const mergeDeep = (target, source) => {
-  Object.keys(source).forEach((key) => {
-    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-      if (!target[key]) target[key] = {}
-      mergeDeep(target[key], source[key])
-    } else if (target[key] === undefined) {
-      target[key] = source[key]
+  Object.keys(source || {}).forEach((key) => {
+    const value = source[key]
+    if (Array.isArray(value)) {
+      target[key] = [...value]
+      return
     }
+    if (value && typeof value === 'object') {
+      if (!target[key] || typeof target[key] !== 'object' || Array.isArray(target[key])) {
+        target[key] = {}
+      }
+      mergeDeep(target[key], value)
+      return
+    }
+    target[key] = value
   })
   return target
 }
 
+const readLocalSettings = () => {
+  const raw = localStorage.getItem(SETTINGS_KEY)
+  if (!raw) return null
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
+}
+
+const writeLocalSettings = (settings) => {
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings))
+  } catch {
+    // ignore
+  }
+}
+
 export const getSettings = () => {
+  const local = readLocalSettings()
+  if (local) {
+    const mergedLocal = structuredClone(defaultSettings)
+    mergeDeep(mergedLocal, local)
+    void setItem(SETTINGS_KEY, mergedLocal)
+    return mergedLocal
+  }
+
   const cached = getItem(SETTINGS_KEY)
   if (!cached) return structuredClone(defaultSettings)
 
@@ -171,6 +203,7 @@ export const getSettings = () => {
     const parsed = cached
     const merged = structuredClone(defaultSettings)
     mergeDeep(merged, parsed)
+    writeLocalSettings(merged)
     return merged
   } catch {
     return structuredClone(defaultSettings)
@@ -178,6 +211,10 @@ export const getSettings = () => {
 }
 
 export const saveSettings = async (settings) => {
-  await setItem(SETTINGS_KEY, settings)
-  await pushSettings(settings)
+  writeLocalSettings(settings)
+  try {
+    await setItem(SETTINGS_KEY, settings)
+  } catch {
+    // ignore IndexedDB errors
+  }
 }

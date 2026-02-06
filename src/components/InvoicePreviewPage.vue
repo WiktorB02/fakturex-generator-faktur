@@ -1,7 +1,10 @@
 <template>
   <div class="invoice-preview-container">
     <div class="invoice-preview-header">
-      <h1>Podgląd dokumentu</h1>
+      <div class="invoice-preview-title">
+        <button class="btn-ghost" @click="goHome">Powrót</button>
+        <h1>Podgląd dokumentu</h1>
+      </div>
       <div class="invoice-preview-actions">
         <button @click="window.print()" class="btn-secondary">
           Drukuj
@@ -21,7 +24,7 @@
       <div class="invoice-header">
         <div>
           <h2>{{ typeLabel }}</h2>
-          <p>{{ labels.number }}: <strong>{{ document.number }}</strong></p>
+          <p>{{ labels.number }}: <strong>{{ doc.number }}</strong></p>
           <p>{{ labels.issueDate }}: <strong>{{ invoiceDate }}</strong></p>
           <p>{{ labels.saleDate }}: <strong>{{ saleDate }}</strong></p>
         </div>
@@ -45,8 +48,8 @@
         </div>
       </div>
 
-      <div v-if="document.relatedNumber" class="invoice-related">
-        Powiązany dokument: <strong>{{ document.relatedNumber }}</strong>
+      <div v-if="doc.relatedNumber" class="invoice-related">
+        Powiązany dokument: <strong>{{ doc.relatedNumber }}</strong>
       </div>
 
       <table class="invoice-table">
@@ -92,14 +95,14 @@
       <div v-if="showPaymentInfo" class="invoice-payment">
         <h3>{{ labels.paymentInfo }}</h3>
         <p>{{ labels.dueDate }}: {{ dueDate }}</p>
-        <p>{{ labels.paymentMethod }}: {{ document.paymentMethod }}</p>
+        <p>{{ labels.paymentMethod }}: {{ doc.paymentMethod }}</p>
         <p>{{ labels.bankAccount }}: {{ settings.payment.bankAccount || '—' }}</p>
         <p>{{ labels.bankName }}: {{ settings.payment.bankName || '—' }}</p>
       </div>
 
-      <div v-if="document.notes" class="invoice-notes">
+      <div v-if="doc.notes" class="invoice-notes">
         <h3>{{ labels.notes }}</h3>
-        <p>{{ document.notes }}</p>
+        <p>{{ doc.notes }}</p>
       </div>
 
       <div v-if="template.terms" class="invoice-notes">
@@ -115,22 +118,23 @@
 </template>
 
 <script setup>
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ref, computed } from 'vue'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 import { getSettings } from '@/services/settings'
 
 const route = useRoute()
+const router = useRouter()
 
 const issuer = ref({})
 const counterparty = ref({})
-const document = ref({})
+const doc = ref({})
 const items = ref([])
 const currency = ref('PLN')
 const settings = ref(getSettings())
 const template = computed(() => settings.value.template)
-const language = computed(() => document.value.language || template.value.language || 'pl')
+const language = computed(() => doc.value.language || template.value.language || 'pl')
 let filename = 'dokument.pdf'
 
 if (route.query.data) {
@@ -138,7 +142,7 @@ if (route.query.data) {
     const parsed = JSON.parse(decodeURIComponent(route.query.data))
     issuer.value = parsed.issuer || {}
     counterparty.value = parsed.counterparty || parsed.client || {}
-    document.value = parsed.document || parsed.invoice || {}
+    doc.value = parsed.document || parsed.invoice || {}
     items.value = parsed.items || []
     currency.value = parsed.currency || 'PLN'
     filename = parsed.filename || filename
@@ -149,16 +153,16 @@ if (route.query.data) {
 
 // Formatowanie daty
 const invoiceDate = computed(() => {
-  if (document.value.issueDate) {
-    const parsedDate = new Date(document.value.issueDate)
+  if (doc.value.issueDate) {
+    const parsedDate = new Date(doc.value.issueDate)
     return isNaN(parsedDate) ? 'Data nieprawidłowa' : parsedDate.toLocaleDateString('pl-PL')
   }
   return 'Brak daty'
 })
 
 const saleDate = computed(() => {
-  if (document.value.saleDate) {
-    const parsedDate = new Date(document.value.saleDate)
+  if (doc.value.saleDate) {
+    const parsedDate = new Date(doc.value.saleDate)
     return isNaN(parsedDate) ? 'Data nieprawidłowa' : parsedDate.toLocaleDateString('pl-PL')
   }
   return 'Brak daty'
@@ -200,7 +204,7 @@ const typeLabel = computed(() => {
     rma: 'Zwrot/RMA',
     expense: 'Wydatek'
   }
-  return labels[document.value.type] || 'Dokument'
+  return labels[doc.value.type] || 'Dokument'
 })
 
 const labels = computed(() => {
@@ -251,28 +255,28 @@ const labels = computed(() => {
 
 const counterpartyTitle = computed(() => {
   const isEn = language.value === 'en'
-  if (document.value.type === 'pz') return isEn ? 'Supplier' : 'Dostawca'
-  if (document.value.type === 'wz') return isEn ? 'Recipient' : 'Odbiorca'
-  if (document.value.type === 'rw') return isEn ? 'Internal issue' : 'Rozchód'
-  if (document.value.type === 'mm') return isEn ? 'Transfer' : 'Przesunięcie'
-  if (document.value.type === 'inw') return isEn ? 'Inventory' : 'Inwentaryzacja'
-  if (document.value.type === 'expense') return isEn ? 'Counterparty' : 'Kontrahent'
+  if (doc.value.type === 'pz') return isEn ? 'Supplier' : 'Dostawca'
+  if (doc.value.type === 'wz') return isEn ? 'Recipient' : 'Odbiorca'
+  if (doc.value.type === 'rw') return isEn ? 'Internal issue' : 'Rozchód'
+  if (doc.value.type === 'mm') return isEn ? 'Transfer' : 'Przesunięcie'
+  if (doc.value.type === 'inw') return isEn ? 'Inventory' : 'Inwentaryzacja'
+  if (doc.value.type === 'expense') return isEn ? 'Counterparty' : 'Kontrahent'
   return isEn ? 'Buyer' : 'Nabywca'
 })
 
 const showPaymentInfo = computed(() =>
   settings.value.template.showPaymentInfo &&
-  ['invoice', 'proforma', 'advance', 'final', 'correction'].includes(document.value.type)
+  ['invoice', 'proforma', 'advance', 'final', 'correction'].includes(doc.value.type)
 )
 
 const dueDate = computed(() => {
-  if (!document.value.dueDate) return '—'
-  const parsed = new Date(document.value.dueDate)
+  if (!doc.value.dueDate) return '—'
+  const parsed = new Date(doc.value.dueDate)
   return isNaN(parsed) ? '—' : parsed.toLocaleDateString('pl-PL')
 })
 
 const downloadPDF = async () => {
-  const element = document.getElementById('pdf')
+  const element = window.document.getElementById('pdf')
   const canvas = await html2canvas(element, { scale: 2 })
   const imgData = canvas.toDataURL('image/png')
   const pdf = new jsPDF('p', 'mm', 'a4')
@@ -280,6 +284,10 @@ const downloadPDF = async () => {
   const pdfHeight = pdf.internal.pageSize.getHeight()
   pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
   pdf.save(filename)
+}
+
+const goHome = () => {
+  router.push({ name: 'home' })
 }
 </script>
 

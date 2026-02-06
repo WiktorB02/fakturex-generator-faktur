@@ -503,7 +503,7 @@
             <select
               class="role-select"
               :value="userItem.role"
-              @change="onUserRoleChange(userItem.id, $event.target.value)"
+              @change="onUserRoleChange(userItem.email, $event.target.value)"
             >
               <option v-for="role in roles" :key="role" :value="role">
                 {{ roleLabel(role) }}
@@ -520,7 +520,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { defaultSettings, getSettings, saveSettings as saveSettingsToStore } from '@/services/settings'
 import { getUsers, updateUserRole } from '@/services/auth'
@@ -576,6 +576,8 @@ const roleLabel = (role) => roleLabels[role] ?? role
 
 const users = ref([])
 const activeSection = ref(null)
+const isLoading = ref(true)
+let saveTimer = null
 
 const usersByRole = computed(() => {
   return users.value.reduce((acc, userItem) => {
@@ -604,6 +606,7 @@ const loadSettings = () => {
   settings.discounts.coupons = parsed.discounts?.coupons ?? settings.discounts.coupons
   settings.permissions = parsed.permissions ?? settings.permissions
   ensureDefaults()
+  isLoading.value = false
 }
 
 const loadUsers = () => {
@@ -671,10 +674,30 @@ const removeCoupon = (index) => {
 
 const saveSettings = async () => {
   ensureDefaults()
-  await saveSettingsToStore(settings)
-  alert('Ustawienia zapisane!')
-  window.dispatchEvent(new Event('permissions-updated'))
-  window.dispatchEvent(new Event('ui-updated'))
+  try {
+    const payload = JSON.parse(JSON.stringify(toRaw(settings)))
+    await saveSettingsToStore(payload)
+    alert('Ustawienia zapisane!')
+    window.dispatchEvent(new Event('permissions-updated'))
+    window.dispatchEvent(new Event('ui-updated'))
+  } catch (error) {
+    alert('Nie udało się zapisać ustawień. Spróbuj ponownie.')
+  }
+}
+
+const autoSave = () => {
+  if (isLoading.value) return
+  if (saveTimer) clearTimeout(saveTimer)
+  saveTimer = setTimeout(async () => {
+    try {
+      const payload = JSON.parse(JSON.stringify(toRaw(settings)))
+      await saveSettingsToStore(payload)
+      window.dispatchEvent(new Event('permissions-updated'))
+      window.dispatchEvent(new Event('ui-updated'))
+    } catch {
+      // ignore autosave errors
+    }
+  }, 400)
 }
 
 const onUserRoleChange = async (email, role) => {
@@ -710,6 +733,8 @@ onMounted(() => {
   loadSettings()
   loadUsers()
 })
+
+watch(settings, autoSave, { deep: true })
 </script>
 
 <style src="./Settings.css"></style>

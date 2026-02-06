@@ -1,6 +1,5 @@
 import { getWarehouses } from '@/services/warehouses'
 import { getItem, setItem } from '@/services/secureStore'
-import { pushCollection } from '@/services/sync'
 
 const INVENTORY_KEY = 'inventory'
 
@@ -30,7 +29,6 @@ export const getInventory = () => {
 
 export const saveInventory = (items) => {
   setItem(INVENTORY_KEY, items)
-  pushCollection(INVENTORY_KEY, items)
 }
 
 export const addInventoryItem = (item) => {

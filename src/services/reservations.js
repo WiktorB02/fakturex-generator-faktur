@@ -1,5 +1,4 @@
 import { getItem, setItem } from '@/services/secureStore'
-import { pushCollection } from '@/services/sync'
 
 const RESERVATIONS_KEY = 'reservations'
 
@@ -9,7 +8,6 @@ export const getReservations = () => {
 
 const saveReservations = (reservations) => {
   setItem(RESERVATIONS_KEY, reservations)
-  pushCollection(RESERVATIONS_KEY, reservations)
 }
 
 export const addReservation = (reservation) => {

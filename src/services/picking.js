@@ -1,5 +1,4 @@
 import { getItem, setItem } from '@/services/secureStore'
-import { pushCollection } from '@/services/sync'
 
 const PICKING_KEY = 'pickingTasks'
 
@@ -9,7 +8,6 @@ export const getPickingTasks = () => {
 
 const savePickingTasks = (tasks) => {
   setItem(PICKING_KEY, tasks)
-  pushCollection(PICKING_KEY, tasks)
 }
 
 export const addPickingTask = (task) => {

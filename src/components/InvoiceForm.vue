@@ -11,229 +11,339 @@
       </button>
     </header>
 
-    <section class="card">
-      <h2>Typ dokumentu</h2>
-      <div class="form-grid">
-        <label>
-          Rodzaj dokumentu
-          <select v-model="document.type">
-            <optgroup label="Sprzedaż">
-              <option value="invoice">Faktura VAT</option>
-              <option value="proforma">Proforma</option>
-              <option value="advance">Faktura zaliczkowa</option>
-              <option value="final">Faktura końcowa</option>
-              <option value="correction">Korekta</option>
-              <option value="receipt">Paragon</option>
-            </optgroup>
-            <optgroup label="Magazyn">
-              <option value="pz">PZ (przyjęcie zewnętrzne)</option>
-            </optgroup>
-            <optgroup label="Finanse">
-              <option value="expense">Wydatek</option>
-            </optgroup>
-          </select>
-        </label>
-        <label>
-          Numer dokumentu
-          <input :value="document.number" type="text" readonly />
-        </label>
-        <label>
-          Data wystawienia
-          <input v-model="document.issueDate" type="date" />
-        </label>
-        <label>
-          Data sprzedaży
-          <input v-model="document.saleDate" type="date" />
-        </label>
-        <label>
-          Waluta
-          <select v-model="document.currency">
-            <option v-for="currencyOption in currencyOptions" :key="currencyOption" :value="currencyOption">
-              {{ currencyOption }}
-            </option>
-          </select>
-        </label>
-        <label>
-          Język dokumentu
-          <select v-model="document.language">
-            <option value="pl">Polski</option>
-            <option value="en">English</option>
-          </select>
-        </label>
-        <label v-if="showPaymentFields">
-          Termin płatności
-          <input v-model="document.dueDate" type="date" />
-        </label>
-        <label v-if="showPaymentFields">
-          Metoda płatności
-          <select v-model="document.paymentMethod">
-            <option>Przelew</option>
-            <option>Gotówka</option>
-            <option>Karta</option>
-            <option>Online</option>
-          </select>
-        </label>
-        <label v-if="showPaymentFields">
-          Status płatności
-          <select v-model="document.paymentStatus">
-            <option value="unpaid">Nieopłacona</option>
-            <option value="paid">Opłacona</option>
-          </select>
-        </label>
-        <label v-if="showRelatedSelect">
-          Powiązany dokument
-          <select v-model="document.relatedNumber">
-            <option value="">Brak</option>
-            <option v-for="doc in relatedDocuments" :key="doc.id" :value="doc.number">
-              {{ doc.number }} — {{ doc.counterparty?.name || 'Kontrahent' }}
-            </option>
-          </select>
-        </label>
-      </div>
-    </section>
-
-    <section v-if="isSalesDoc" class="card">
-      <h2>Opcje sprzedaży</h2>
-      <div class="form-grid">
-        <label>
-          Cennik
-          <select v-model="selectedPriceListId">
-            <option value="">Domyślny</option>
-            <option v-for="list in priceLists" :key="list.id" :value="list.id">
-              {{ list.name }}
-            </option>
-          </select>
-        </label>
-        <label>
-          Magazyn do WZ
-          <select v-model="selectedWarehouseId">
-            <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
-              {{ warehouse.name }}
-            </option>
-          </select>
-        </label>
-        <label class="checkbox-row">
-          <input v-model="autoWz" type="checkbox" />
-          Automatycznie generuj WZ
-        </label>
-        <label>
-          Rabat globalny (%)
-          <input v-model.number="globalDiscount" type="number" min="0" max="100" />
-        </label>
-        <label>
-          Kupon rabatowy
-          <input v-model.trim="couponCode" type="text" placeholder="Kod kuponu" />
-        </label>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>Dane wystawcy</h2>
-      <div class="form-grid">
-        <label>
-          Nazwa firmy *
-          <input v-model="issuer.name" type="text" :class="{ error: validated && !issuer.name }" />
-        </label>
-        <label>
-          NIP *
-          <input v-model="issuer.nip" type="text" :class="{ error: validated && !isValidNIP(issuer.nip) }" />
-        </label>
-        <label>
-          Adres *
-          <input v-model="issuer.address" type="text" :class="{ error: validated && !issuer.address }" />
-        </label>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>{{ counterpartyTitle }}</h2>
-      <div class="form-grid">
-        <label>
-          Wybierz kontrahenta
-          <select v-model="selectedContactId" @change="applyContact">
-            <option value="">Wpisz ręcznie</option>
-            <option v-for="contact in contacts" :key="contact.id" :value="contact.id">
-              {{ contact.name }}
-            </option>
-          </select>
-        </label>
-        <label>
-          Nazwa *
-          <input v-model="counterparty.name" type="text" :class="{ error: validated && !counterparty.name }" />
-        </label>
-        <label>
-          NIP
-          <input v-model="counterparty.nip" type="text" :class="{ error: validated && requireCounterpartyNip && !isValidNIP(counterparty.nip) }" />
-        </label>
-        <label>
-          Adres *
-          <input v-model="counterparty.address" type="text" :class="{ error: validated && !counterparty.address }" />
-        </label>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2>Pozycje</h2>
-      <div class="items-list">
-        <div v-for="(item, index) in items" :key="index" class="item-row">
-          <div class="item-grid">
+    <div class="form-layout">
+      <div class="form-main">
+        <section class="card">
+          <div class="card-header">
             <div>
-              <select @change="applyProductToItem(index, $event.target.value)">
-                <option value="">Wybierz z magazynu...</option>
-                <option v-for="product in filteredProducts" :key="product.name" :value="product.name">
-                  {{ product.name }}
+              <h2>1. Podstawy dokumentu</h2>
+              <p class="section-hint">Wybierz typ dokumentu i podstawowe daty.</p>
+            </div>
+          </div>
+          <div class="form-grid">
+            <label>
+              Rodzaj dokumentu
+              <select v-model="document.type" class="field-primary">
+                <optgroup label="Sprzedaż">
+                  <option value="invoice">Faktura VAT</option>
+                  <option value="proforma">Proforma</option>
+                  <option value="advance">Faktura zaliczkowa</option>
+                  <option value="final">Faktura końcowa</option>
+                  <option value="correction">Korekta</option>
+                  <option value="receipt">Paragon</option>
+                </optgroup>
+                <optgroup label="Magazyn">
+                  <option value="pz">PZ (przyjęcie zewnętrzne)</option>
+                </optgroup>
+                <optgroup label="Finanse">
+                  <option value="expense">Wydatek</option>
+                </optgroup>
+              </select>
+            </label>
+            <label>
+              Numer dokumentu
+              <input :value="document.number" type="text" readonly class="field-secondary" />
+              <span class="field-hint">Numer nadawany automatycznie według ustawień.</span>
+            </label>
+            <label>
+              Data wystawienia
+              <input v-model="document.issueDate" type="date" placeholder="Wybierz datę" class="field-primary" />
+              <span class="field-hint">Dzień wystawienia dokumentu.</span>
+            </label>
+            <label>
+              Data sprzedaży
+              <input v-model="document.saleDate" type="date" placeholder="Wybierz datę" class="field-secondary" />
+              <span class="field-hint">Data faktycznej sprzedaży/usługi.</span>
+            </label>
+            <label class="checkbox-row" v-if="showPaymentFields">
+              <input v-model="showPaymentOptions" type="checkbox" />
+              Pokaż opcje płatności
+            </label>
+            <template v-if="showPaymentFields && showPaymentOptions">
+              <label>
+                Termin płatności
+                <input v-model="document.dueDate" type="date" placeholder="Wybierz termin" class="field-secondary" />
+                <span class="field-hint">Domyślnie liczony z ustawień płatności.</span>
+              </label>
+              <label>
+                Metoda płatności
+                <select v-model="document.paymentMethod" class="field-secondary">
+                  <option>Przelew</option>
+                  <option>Gotówka</option>
+                  <option>Karta</option>
+                  <option>Online</option>
+                </select>
+                <span class="field-hint">Wyświetlana na dokumencie i w podglądzie.</span>
+              </label>
+              <label>
+                Status płatności
+                <select v-model="document.paymentStatus" class="field-secondary">
+                  <option value="unpaid">Nieopłacona</option>
+                  <option value="paid">Opłacona</option>
+                </select>
+                <span class="field-hint">Używane w rejestrze i filtrach płatności.</span>
+              </label>
+            </template>
+            <label class="checkbox-row">
+              <input v-model="showAdvancedOptions" type="checkbox" />
+              Pokaż opcje zaawansowane
+            </label>
+            <template v-if="showAdvancedOptions">
+              <label>
+                Waluta
+                <select v-model="document.currency" class="field-secondary">
+                  <option v-for="currencyOption in currencyOptions" :key="currencyOption" :value="currencyOption">
+                    {{ currencyOption }}
+                  </option>
+                </select>
+              </label>
+              <label>
+                Język dokumentu
+                <select v-model="document.language" class="field-secondary">
+                  <option value="pl">Polski</option>
+                  <option value="en">English</option>
+                </select>
+              </label>
+            </template>
+            <label v-if="showRelatedSelect">
+              Powiązany dokument
+              <select v-model="document.relatedNumber" class="field-secondary">
+                <option value="">Brak</option>
+                <option v-for="doc in relatedDocuments" :key="doc.id" :value="doc.number">
+                  {{ doc.number }} — {{ doc.counterparty?.name || 'Kontrahent' }}
                 </option>
               </select>
-              <input
-                v-model="item.description"
-                placeholder="Opis pozycji *"
-                :class="{ error: validated && !item.description }"
-              />
-            </div>
-            <input v-model.number="item.quantity" type="number" min="1" placeholder="Ilość *" :class="{ error: validated && item.quantity <= 0 }" />
-            <input v-model.number="item.price" type="number" min="0" step="0.01" placeholder="Cena netto *" :class="{ error: validated && item.price < 0 }" />
-            <input v-model.number="item.discountPercent" type="number" min="0" max="100" placeholder="Rabat %" />
-            <select v-model="item.vat">
-              <option v-for="rate in vatRates" :key="rate" :value="rate">
-                {{ rate === 'zw' ? 'zw' : rate + '%' }}
-              </option>
-            </select>
-            <input type="text" :value="formatNet(item)" disabled />
-            <input type="text" :value="formatGross(item)" disabled />
+            </label>
           </div>
-          <button class="danger-btn" type="button" @click="removeItem(index)">
-            Usuń pozycję
-          </button>
-        </div>
-      </div>
-      <button class="ghost-btn" type="button" @click="addItem">Dodaj pozycję</button>
-    </section>
+        </section>
 
-    <section class="card">
-      <h2>Uwagi</h2>
-      <textarea v-model="document.notes" rows="3" placeholder="Dodatkowe informacje..."></textarea>
-    </section>
+        <section v-if="isSalesDoc" class="card">
+          <div class="card-header">
+            <div>
+              <h2>2. Sprzedaż i rabaty</h2>
+              <p class="section-hint">Cenniki, rabaty i ustawienia magazynowe.</p>
+            </div>
+          </div>
+          <div class="form-grid">
+            <label>
+              Cennik
+              <select v-model="selectedPriceListId" class="field-secondary">
+                <option value="">Domyślny</option>
+                <option v-for="list in priceLists" :key="list.id" :value="list.id">
+                  {{ list.name }}
+                </option>
+              </select>
+              <span class="field-hint">Wybór cennika automatycznie uzupełni ceny pozycji.</span>
+            </label>
+            <label>
+              Magazyn do WZ
+              <select v-model="selectedWarehouseId" class="field-secondary">
+                <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
+                  {{ warehouse.name }}
+                </option>
+              </select>
+              <span class="field-hint">Dotyczy automatycznego dokumentu WZ.</span>
+            </label>
+            <label class="checkbox-row">
+              <input v-model="autoWz" type="checkbox" />
+              Automatycznie generuj WZ
+            </label>
+            <label>
+              Rabat globalny (%)
+              <input v-model.number="globalDiscount" type="number" min="0" max="100" class="field-secondary" />
+              <span class="field-hint">Dodatkowy rabat naliczany na cały dokument.</span>
+            </label>
+            <label>
+              Kupon rabatowy
+              <input v-model.trim="couponCode" type="text" placeholder="Kod kuponu" class="field-secondary" />
+              <span class="field-hint">Sprawdza kupony z ustawień.</span>
+            </label>
+          </div>
+        </section>
 
-    <section class="summary-card">
-      <div>
-        <p>Suma netto</p>
-        <strong>{{ totalNetto }} {{ document.currency }}</strong>
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <h2>3. Dane wystawcy</h2>
+              <p class="section-hint">Możesz skorzystać z danych zapisanych w ustawieniach.</p>
+            </div>
+          </div>
+          <div class="form-grid">
+            <label class="checkbox-row">
+              <input v-model="useCompanyData" type="checkbox" />
+              Użyj danych firmy z ustawień
+            </label>
+          </div>
+          <div v-if="useCompanyData" class="issuer-preview">
+            <p><strong>{{ issuer.name || 'Brak nazwy firmy' }}</strong></p>
+            <p>NIP: {{ issuer.nip || '—' }}</p>
+            <p>Adres: {{ issuer.address || '—' }}</p>
+          </div>
+          <div v-else class="form-grid">
+            <label>
+              Nazwa firmy *
+              <input v-model="issuer.name" type="text" placeholder="Np. Firma Sp. z o.o." :class="{ error: validated && !issuer.name }" class="field-primary" />
+            </label>
+            <label>
+              NIP *
+              <input v-model="issuer.nip" type="text" placeholder="Np. 1234567890" :class="{ error: validated && !isValidNIP(issuer.nip) }" class="field-secondary" />
+            </label>
+            <label>
+              Adres *
+              <input v-model="issuer.address" type="text" placeholder="Ulica, kod, miasto" :class="{ error: validated && !issuer.address }" class="field-secondary" />
+            </label>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <h2>4. {{ counterpartyTitle }}</h2>
+              <p class="section-hint">Wybierz kontrahenta lub wpisz dane ręcznie.</p>
+            </div>
+          </div>
+          <div class="form-grid">
+            <label>
+              Wybierz kontrahenta
+              <select v-model="selectedContactId" @change="applyContact" class="field-primary">
+                <option value="">Wpisz ręcznie</option>
+                <option v-for="contact in contacts" :key="contact.id" :value="contact.id">
+                  {{ contact.name }}
+                </option>
+              </select>
+            </label>
+            <label>
+              Nazwa *
+              <input v-model="counterparty.name" type="text" placeholder="Np. Klient Sp. z o.o." :class="{ error: validated && !counterparty.name }" class="field-primary" />
+            </label>
+            <label>
+              NIP
+              <input v-model="counterparty.nip" type="text" placeholder="Np. 1234567890" :class="{ error: validated && requireCounterpartyNip && !isValidNIP(counterparty.nip) }" class="field-secondary" />
+            </label>
+            <label>
+              Adres *
+              <input v-model="counterparty.address" type="text" placeholder="Ulica, kod, miasto" :class="{ error: validated && !counterparty.address }" class="field-secondary" />
+            </label>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <h2>5. Pozycje dokumentu</h2>
+              <p class="section-hint">Dodaj produkty z magazynu lub wpisz pozycje ręcznie.</p>
+            </div>
+          </div>
+          <div class="item-grid item-grid--header">
+            <span>Produkt / opis</span>
+            <span>Ilość</span>
+            <span>Cena netto</span>
+            <span>Rabat</span>
+            <span>VAT</span>
+            <span>Netto</span>
+            <span>Brutto</span>
+          </div>
+          <div class="items-list">
+            <div v-for="(item, index) in items" :key="index" class="item-row">
+              <div class="item-grid">
+                <div>
+                  <select @change="applyProductToItem(index, $event.target.value)" class="field-secondary">
+                    <option value="">Wybierz z magazynu...</option>
+                    <option v-for="product in filteredProducts" :key="product.name" :value="product.name">
+                      {{ product.name }}
+                    </option>
+                  </select>
+                  <input
+                    v-model="item.description"
+                    placeholder="Opis pozycji *"
+                    :class="{ error: validated && !item.description }"
+                    class="field-primary"
+                  />
+                </div>
+                <input v-model.number="item.quantity" type="number" min="1" placeholder="Ilość *" :class="{ error: validated && item.quantity <= 0 }" class="field-primary" />
+                <input v-model.number="item.price" type="number" min="0" step="0.01" placeholder="Cena netto *" :class="{ error: validated && item.price < 0 }" class="field-primary" />
+                <input v-model.number="item.discountPercent" type="number" min="0" max="100" placeholder="Rabat %" class="field-secondary" />
+                <select v-model="item.vat" class="field-secondary">
+                  <option v-for="rate in vatRates" :key="rate" :value="rate">
+                    {{ rate === 'zw' ? 'zw' : rate + '%' }}
+                  </option>
+                </select>
+                <input type="text" :value="formatNet(item)" disabled />
+                <input type="text" :value="formatGross(item)" disabled />
+              </div>
+              <button class="danger-btn" type="button" @click="removeItem(index)">
+                Usuń pozycję
+              </button>
+            </div>
+          </div>
+          <button class="ghost-btn" type="button" @click="addItem">Dodaj pozycję</button>
+        </section>
+
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <h2>6. Uwagi</h2>
+              <p class="section-hint">Dodatkowe informacje widoczne na dokumencie.</p>
+            </div>
+          </div>
+          <textarea v-model="document.notes" rows="3" placeholder="Dodatkowe informacje..." class="field-secondary"></textarea>
+        </section>
       </div>
-      <div>
-        <p>VAT</p>
-        <strong>{{ totalVat }} {{ document.currency }}</strong>
-      </div>
-      <div>
-        <p>Suma brutto</p>
-        <strong>{{ totalBrutto }} {{ document.currency }}</strong>
-      </div>
-      <button class="secondary-btn" type="button" @click="resetForm">Wyczyść formularz</button>
-    </section>
+
+      <aside class="form-side">
+        <section class="summary-card sticky-card">
+          <div>
+            <p>Suma netto</p>
+            <strong>{{ totalNetto }} {{ document.currency }}</strong>
+          </div>
+          <div>
+            <p>VAT</p>
+            <strong>{{ totalVat }} {{ document.currency }}</strong>
+          </div>
+          <div>
+            <p>Suma brutto</p>
+            <strong>{{ totalBrutto }} {{ document.currency }}</strong>
+          </div>
+          <button class="secondary-btn" type="button" @click="resetForm">Wyczyść formularz</button>
+        </section>
+
+        <section class="card compact-card sticky-card">
+          <h3>Podgląd wyborów</h3>
+          <div class="overview-list">
+            <div>
+              <span>Typ dokumentu</span>
+              <strong>{{ document.type }}</strong>
+            </div>
+            <div>
+              <span>Kontrahent</span>
+              <strong>{{ counterparty.name || 'Nie wybrano' }}</strong>
+            </div>
+            <div>
+              <span>Cennik</span>
+              <strong>{{ priceLists.find((list) => list.id === selectedPriceListId)?.name || 'Domyślny' }}</strong>
+            </div>
+            <div>
+              <span>Waluta</span>
+              <strong>{{ document.currency }}</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="card compact-card sticky-card">
+          <h3>Szybkie wskazówki</h3>
+          <ul class="hint-list">
+            <li>Najpierw wybierz kontrahenta — cennik i rabat uzupełnią się automatycznie.</li>
+            <li>Pozycje możesz dodawać z magazynu lub wpisać ręcznie.</li>
+            <li>Opcje zaawansowane są ukryte, aby nie rozpraszać początkujących.</li>
+          </ul>
+        </section>
+      </aside>
+    </div>
   </form>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, toRaw } from 'vue'
 import { useRouter } from 'vue-router'
 import { getSettings } from '@/services/settings'
 import { addDocument, commitNumber, getNextNumberPreview, getDocuments } from '@/services/documents'
@@ -261,6 +371,10 @@ const couponCode = ref('')
 const autoWz = ref(true)
 const validated = ref(false)
 const existingDocuments = ref([])
+const showPaymentOptions = ref(false)
+const showAdvancedOptions = ref(false)
+const useCompanyData = ref(true)
+const autoDueDate = ref('')
 
 const document = ref({
   type: 'invoice',
@@ -304,7 +418,9 @@ const counterpartyTitle = computed(() => {
   return 'Dane nabywcy'
 })
 
-const requireCounterpartyNip = computed(() => isSalesDoc.value)
+const requireCounterpartyNip = computed(() =>
+  ['invoice', 'proforma', 'advance', 'final', 'correction'].includes(document.value.type)
+)
 
 const vatRates = computed(() => settings.value.tax.enabledVatRates)
 const currencyOptions = computed(() => settings.value.tax.enabledCurrencies)
@@ -320,7 +436,7 @@ const applyProductToItem = (index, productName) => {
   const product = availableProducts.value.find((p) => p.name === productName)
   if (product) {
     items.value[index].description = product.name
-    items.value[index].price = resolvePrice(product.name)
+    items.value[index].price = resolvePrice(product.name, product.id)
     items.value[index].vat = String(product.vat)
     items.value[index].itemId = product.id
   }
@@ -347,7 +463,12 @@ const loadPriceLists = () => {
 
 const applyContact = () => {
   const contact = contacts.value.find((entry) => entry.id === selectedContactId.value)
-  if (!contact) return
+  if (!contact) {
+    selectedPriceListId.value = ''
+    globalDiscount.value = settings.value.discounts.globalPercent || 0
+    applyPriceListToItems()
+    return
+  }
   counterparty.value = {
     name: contact.name,
     nip: contact.nip || '',
@@ -355,6 +476,7 @@ const applyContact = () => {
   }
   selectedPriceListId.value = contact.priceListId || ''
   globalDiscount.value = Number(contact.discountPercent || settings.value.discounts.globalPercent || 0)
+  applyPriceListToItems()
 }
 
 const loadCompanyData = () => {
@@ -377,15 +499,51 @@ const updateNumber = () => {
   document.value.number = getNextNumberPreview(document.value.type, date, settings.value)
 }
 
+const formatToday = () => new Date().toISOString().slice(0, 10)
+
+const updateAutoDates = () => {
+  if (!document.value.issueDate) return
+  if (!document.value.saleDate) {
+    document.value.saleDate = document.value.issueDate
+  }
+
+  if (!isSalesDoc.value || document.value.type === 'receipt') return
+  const days = Number(settings.value.payment.paymentDays || 0)
+  const base = new Date(document.value.issueDate)
+  base.setDate(base.getDate() + days)
+  const next = base.toISOString().slice(0, 10)
+  if (!document.value.dueDate || document.value.dueDate === autoDueDate.value) {
+    document.value.dueDate = next
+    autoDueDate.value = next
+  }
+}
+
+const ensureDocumentDates = () => {
+  if (!document.value.issueDate) {
+    document.value.issueDate = formatToday()
+  }
+  if (!document.value.saleDate) {
+    document.value.saleDate = document.value.issueDate
+  }
+
+  if (showPaymentFields.value && !document.value.dueDate) {
+    const days = Number(settings.value.payment.paymentDays || 0)
+    const base = new Date(document.value.issueDate)
+    base.setDate(base.getDate() + days)
+    document.value.dueDate = base.toISOString().slice(0, 10)
+  }
+}
+
 const resetForm = () => {
   counterparty.value = { name: '', nip: '', address: '' }
   selectedContactId.value = ''
   items.value = [{ description: '', quantity: 1, price: 0, vat: settings.value.tax.defaultVat, discountPercent: 0, itemId: '' }]
+  const today = formatToday()
   document.value = {
     type: document.value.type,
     number: '',
-    issueDate: new Date().toISOString().substring(0, 10),
-    saleDate: new Date().toISOString().substring(0, 10),
+    issueDate: today,
+    saleDate: today,
     dueDate: '',
     currency: settings.value.tax.defaultCurrency,
     paymentMethod: settings.value.payment.paymentMethod,
@@ -397,6 +555,10 @@ const resetForm = () => {
   validated.value = false
   globalDiscount.value = settings.value.discounts.globalPercent || 0
   couponCode.value = ''
+  showPaymentOptions.value = false
+  showAdvancedOptions.value = false
+  useCompanyData.value = true
+  loadCompanyData()
   updateNumber()
 }
 
@@ -457,14 +619,51 @@ const formatGross = (item) => {
   return `${(item.price * item.quantity * (1 - discount) * (1 + vatToNumber(item.vat) / 100)).toFixed(2)} ${document.value.currency}`
 }
 
-const resolvePrice = (productName) => {
+const resolvePrice = (productName, productId = '') => {
   if (!selectedPriceListId.value) {
-    const product = availableProducts.value.find((entry) => entry.name === productName)
+    const product = availableProducts.value.find((entry) =>
+      (productId && entry.id === productId) || entry.name === productName
+    )
     return product ? Number(product.price) : 0
   }
   const list = priceLists.value.find((entry) => entry.id === selectedPriceListId.value)
-  const item = list?.items?.find((entry) => entry.productName === productName)
+  const item = list?.items?.find((entry) =>
+    (productId && entry.productId === productId) || entry.productName === productName
+  )
   return item ? Number(item.price) : 0
+}
+
+const resolvePriceForItem = (item) => {
+  const product = availableProducts.value.find((p) => p.id === item.itemId)
+  const name = item.description || product?.name
+  if (!name && !product?.id) return item.price
+
+  if (!selectedPriceListId.value) {
+    if (product) return Number(product.price)
+    const match = availableProducts.value.find((entry) => entry.name === name)
+    return match ? Number(match.price) : item.price
+  }
+
+  const list = priceLists.value.find((entry) => entry.id === selectedPriceListId.value)
+  const found = list?.items?.find((entry) =>
+    (product?.id && entry.productId === product.id) || entry.productName === name
+  )
+  return found ? Number(found.price) : item.price
+}
+
+const applyPriceListToItems = () => {
+  if (!items.value.length) return
+  items.value = items.value.map((item) => ({
+    ...item,
+    price: resolvePriceForItem(item)
+  }))
+
+  const list = priceLists.value.find((entry) => entry.id === selectedPriceListId.value)
+  if (list?.currency) {
+    document.value.currency = list.currency
+  } else {
+    document.value.currency = settings.value.tax.defaultCurrency
+  }
 }
 
 const isValidNIP = (nip) => {
@@ -474,94 +673,123 @@ const isValidNIP = (nip) => {
 }
 
 const validate = () => {
-  const issuerValid = issuer.value.name && isValidNIP(issuer.value.nip) && issuer.value.address
-  const counterpartyValid = counterparty.value.name && counterparty.value.address
-  const nipValid = !requireCounterpartyNip.value || isValidNIP(counterparty.value.nip)
+  const issuerName = issuer.value.name || settings.value.company.name || ''
+  const issuerValid = !!issuerName
+  const counterpartyValid = counterparty.value.name
+  const nipValid = !requireCounterpartyNip.value || (counterparty.value.nip ? isValidNIP(counterparty.value.nip) : true)
   const itemsValid = items.value.length > 0 && items.value.every((item) => item.description && item.quantity > 0 && item.price >= 0)
   return issuerValid && counterpartyValid && nipValid && document.value.issueDate && document.value.saleDate && itemsValid
 }
 
 const goToPreview = () => {
-  validated.value = true
-  if (!validate()) {
-    alert('Uzupełnij poprawnie wszystkie wymagane pola przed przejściem do podglądu.')
-    return
-  }
+  try {
+    ensureDocumentDates()
+    validated.value = true
+    if (!validate()) {
+      alert('Uzupełnij poprawnie wszystkie wymagane pola przed przejściem do podglądu.')
+      return
+    }
 
-  const issueDate = new Date(document.value.issueDate)
-  const number = commitNumber(document.value.type, issueDate, settings.value)
-  const filename = `${number}_${counterparty.value.name.replace(/\s+/g, '_')}.pdf`
+    const issueDateRaw = document.value.issueDate || formatToday()
+    const issueDate = new Date(issueDateRaw)
+    const safeDate = isNaN(issueDate) ? new Date() : issueDate
+    const number = commitNumber(document.value.type, safeDate, settings.value)
+    const safeName = String(counterparty.value.name || 'kontrahent')
+    const filename = `${number}_${safeName.replace(/\s+/g, '_')}.pdf`
 
-  const newDoc = {
-    id: crypto.randomUUID(),
-    type: document.value.type,
-    number,
-    issuer: issuer.value,
-    counterparty: counterparty.value,
-    document: {
-      ...document.value,
+    const clone = (value) => {
+      const raw = toRaw(value)
+      if (typeof structuredClone === 'function') {
+        try {
+          return structuredClone(raw)
+        } catch {
+          // fallback below
+        }
+      }
+      return JSON.parse(JSON.stringify(raw))
+    }
+    const createId = () => (crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`)
+
+    const issuerData = clone(issuer.value)
+    const counterpartyData = clone(counterparty.value)
+    const itemsData = clone(items.value)
+    const documentData = clone(document.value)
+
+    const newDoc = {
+      id: createId(),
+      type: document.value.type,
       number,
-      issueDate: document.value.issueDate,
-      saleDate: document.value.saleDate,
-      dueDate: document.value.dueDate,
-      language: document.value.language
-    },
-    items: items.value,
-    currency: document.value.currency,
-    totals: {
-      netto: totalNetto.value,
-      vat: totalVat.value,
-      brutto: totalBrutto.value
-    },
-    filename
-  }
-
-  addDocument(newDoc)
-  loadDocuments()
-
-  if (autoWz.value && ['invoice', 'final', 'receipt'].includes(document.value.type)) {
-    const wzNumber = commitNumber('wz', issueDate, settings.value)
-    items.value.forEach((item) => {
-      if (item.itemId) adjustInventoryStock(item.itemId, -Number(item.quantity))
-    })
-
-    addDocument({
-      id: crypto.randomUUID(),
-      type: 'wz',
-      number: wzNumber,
-      issuer: issuer.value,
-      counterparty: counterparty.value,
+      issuer: issuerData,
+      counterparty: counterpartyData,
       document: {
-        type: 'wz',
-        number: wzNumber,
+        ...documentData,
+        number,
         issueDate: document.value.issueDate,
         saleDate: document.value.saleDate,
-        warehouseId: selectedWarehouseId.value
+        dueDate: document.value.dueDate,
+        language: document.value.language
       },
-      items: items.value.map((item) => ({
-        description: item.description,
-        quantity: item.quantity,
-        price: item.price,
-        vat: item.vat
-      })),
+      items: itemsData,
       currency: document.value.currency,
       totals: {
         netto: totalNetto.value,
         vat: totalVat.value,
         brutto: totalBrutto.value
       },
-      filename: `${wzNumber}.pdf`
-    })
-  }
-
-  router.push({
-    name: 'InvoicePreview',
-    query: {
-      data: encodeURIComponent(JSON.stringify(newDoc))
+      filename
     }
-  })
 
-  resetForm()
+    addDocument(newDoc)
+    loadDocuments()
+
+    if (autoWz.value && ['invoice', 'final', 'receipt'].includes(document.value.type)) {
+      const wzNumber = commitNumber('wz', safeDate, settings.value)
+      items.value.forEach((item) => {
+        if (item.itemId) adjustInventoryStock(item.itemId, -Number(item.quantity))
+      })
+
+      addDocument({
+        id: createId(),
+        type: 'wz',
+        number: wzNumber,
+        issuer: issuerData,
+        counterparty: counterpartyData,
+        document: {
+          type: 'wz',
+          number: wzNumber,
+          issueDate: document.value.issueDate,
+          saleDate: document.value.saleDate,
+          warehouseId: selectedWarehouseId.value
+        },
+        items: itemsData.map((item) => ({
+          description: item.description,
+          quantity: item.quantity,
+          price: item.price,
+          vat: item.vat
+        })),
+        currency: document.value.currency,
+        totals: {
+          netto: totalNetto.value,
+          vat: totalVat.value,
+          brutto: totalBrutto.value
+        },
+        filename: `${wzNumber}.pdf`
+      })
+    }
+
+    router.push({
+      name: 'InvoicePreview',
+      query: {
+        data: encodeURIComponent(JSON.stringify(newDoc))
+      }
+    })
+
+    resetForm()
+  } catch (error) {
+    console.error('Błąd zapisu dokumentu:', error)
+    const details = error?.message ? `\nSzczegóły: ${error.message}` : ''
+    alert(`Nie udało się zapisać dokumentu. Sprawdź wymagane pola i spróbuj ponownie.${details}`)
+  }
 }
 
 const goToHome = () => {
@@ -575,19 +803,34 @@ onMounted(() => {
   loadWarehouses()
   loadPriceLists()
   loadCompanyData()
+  if (!settings.value.company?.name) {
+    useCompanyData.value = false
+  }
   loadDocuments()
-  const today = new Date().toISOString().substring(0, 10)
-  document.value.issueDate = today
-  document.value.saleDate = today
+  if (!document.value.issueDate) {
+    const today = formatToday()
+    document.value.issueDate = today
+    document.value.saleDate = today
+  }
   document.value.currency = settings.value.tax.defaultCurrency
   document.value.paymentMethod = settings.value.payment.paymentMethod
   document.value.language = settings.value.template.language || 'pl'
-  document.value.dueDate = new Date(Date.now() + settings.value.payment.paymentDays * 86400000)
-    .toISOString()
-    .substring(0, 10)
   globalDiscount.value = settings.value.discounts.globalPercent || 0
   updateNumber()
+  updateAutoDates()
 })
 
-watch([() => document.value.type, () => document.value.issueDate], updateNumber)
+watch([() => document.value.type, () => document.value.issueDate], () => {
+  updateNumber()
+  updateAutoDates()
+})
+watch(() => selectedPriceListId.value, applyPriceListToItems)
+watch(
+  () => useCompanyData.value,
+  (useDefaults) => {
+    if (useDefaults) {
+      loadCompanyData()
+    }
+  }
+)
 </script>

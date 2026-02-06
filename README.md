@@ -12,28 +12,17 @@ Nowoczesna aplikacja do fakturowania, obsługi magazynu i dokumentów sprzedaży
 
 ## Stack
 - Frontend: Vue 3 + Vite
-- Backend: Node.js + Express + SQLite
-- Lokalna baza: `backend/data/fakturex.db`
+- Lokalna baza: szyfrowany IndexedDB (przeglądarka)
 
 ## Uruchomienie (lokalnie)
-1. Frontend:
-	- `npm install`
-	- `npm run dev`
-2. Backend:
-	- `cd backend`
-	- `npm install`
-	- `npm run dev`
-
-## Konfiguracja
-- Frontend API URL: ustaw `VITE_API_URL` w `.env` (wzór w `.env.example`).
-- Backend: ustaw `JWT_SECRET`, `CORS_ORIGIN` w `backend/.env` (wzór w `backend/.env.example`).
+- `npm install`
+- `npm run dev`
 
 ## Dane
-Backend zapisuje dane w `backend/data/fakturex.db` (SQLite). Po restarcie komputera wszystko zostaje.
+Zapisywane lokalnie w przeglądarce (IndexedDB). Po restarcie komputera wszystko zostaje.
 
 ## Struktura
-- `src/` – frontend
-- `backend/` – backend REST
+- `src/` – aplikacja
 
 ## Licencja
 MIT

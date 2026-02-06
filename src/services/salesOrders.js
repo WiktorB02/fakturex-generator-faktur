@@ -1,5 +1,4 @@
 import { getItem, setItem } from '@/services/secureStore'
-import { pushCollection } from '@/services/sync'
 
 const SALES_ORDERS_KEY = 'salesOrders'
 
@@ -9,7 +8,6 @@ export const getSalesOrders = () => {
 
 const saveSalesOrders = (orders) => {
   setItem(SALES_ORDERS_KEY, orders)
-  pushCollection(SALES_ORDERS_KEY, orders)
 }
 
 export const addSalesOrder = (order) => {

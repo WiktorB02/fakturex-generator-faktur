@@ -1,5 +1,4 @@
 import { getItem, setItem } from '@/services/secureStore'
-import { pushCollection } from '@/services/sync'
 
 const RETURNS_KEY = 'returns'
 
@@ -9,7 +8,6 @@ export const getReturns = () => {
 
 const saveReturns = (returnsList) => {
   setItem(RETURNS_KEY, returnsList)
-  pushCollection(RETURNS_KEY, returnsList)
 }
 
 export const addReturn = (entry) => {
