@@ -1,5 +1,39 @@
-# Vue 3 + Vite
+# Fakturex – Generator faktur i magazyn
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+Nowoczesna aplikacja do fakturowania, obsługi magazynu i dokumentów sprzedaży z lokalnym backendem.
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+## Funkcje
+- Faktury VAT, proformy, zaliczkowe, końcowe, korekty, paragony
+- Dokumenty magazynowe (PZ/WZ/RW/MM/INW)
+- Zamówienia sprzedaży/zakupu, picking, zwroty (RMA)
+- Kontrahenci, magazyny, rezerwacje, partie/FEFO
+- Cenniki, rabaty, kupony, szablony, języki
+- Role i uprawnienia + panel ustawień
+
+## Stack
+- Frontend: Vue 3 + Vite
+- Backend: Node.js + Express + SQLite
+- Lokalna baza: `backend/data/fakturex.db`
+
+## Uruchomienie (lokalnie)
+1. Frontend:
+	- `npm install`
+	- `npm run dev`
+2. Backend:
+	- `cd backend`
+	- `npm install`
+	- `npm run dev`
+
+## Konfiguracja
+- Frontend API URL: ustaw `VITE_API_URL` w `.env` (wzór w `.env.example`).
+- Backend: ustaw `JWT_SECRET`, `CORS_ORIGIN` w `backend/.env` (wzór w `backend/.env.example`).
+
+## Dane
+Backend zapisuje dane w `backend/data/fakturex.db` (SQLite). Po restarcie komputera wszystko zostaje.
+
+## Struktura
+- `src/` – frontend
+- `backend/` – backend REST
+
+## Licencja
+MIT
