@@ -79,7 +79,7 @@ export const hasRole = (roles = []) => {
 }
 
 const storeBackendSession = async (token, user) => {
-  localStorage.setItem('apiToken', token)
+  await setItem('apiToken', token)
 
   const companiesResponse = await fetch(apiUrl('/companies'), {
     headers: { Authorization: `Bearer ${token}` }
@@ -90,7 +90,7 @@ const storeBackendSession = async (token, user) => {
   }
 
   const companies = await companiesResponse.json()
-  let companyId = localStorage.getItem('companyId')
+  let companyId = getItem('companyId')
   if (!companyId || !companies.some((company) => company.id === companyId)) {
     if (companies.length > 0) {
       companyId = companies[0].id
@@ -113,7 +113,7 @@ const storeBackendSession = async (token, user) => {
     }
   }
 
-  localStorage.setItem('companyId', companyId)
+  await setItem('companyId', companyId)
 }
 
 export const login = async (email, password) => {
@@ -166,8 +166,8 @@ export const login = async (email, password) => {
 
 export const logout = () => {
   removeItem(AUTH_KEY)
-  localStorage.removeItem('apiToken')
-  localStorage.removeItem('companyId')
+  removeItem('apiToken')
+  removeItem('companyId')
 }
 
 export const getDemoUsers = () =>

@@ -150,11 +150,11 @@ export const setItem = async (key, value) => {
 }
 
 export const removeItem = async (key) => {
+  cache.delete(key)
+  removeFallback(key)
   if (dbInstance) {
     await dbInstance.delete(STORE_NAME, key)
   }
-  removeFallback(key)
-  cache.delete(key)
 }
 
 export const getAllKeys = () => Array.from(cache.keys())

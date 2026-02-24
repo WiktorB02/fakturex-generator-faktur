@@ -113,8 +113,10 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { clearDocuments, getDocuments, removeDocument } from '@/services/documents'
+import { useToast } from '@/services/toast'
 
 const router = useRouter()
+const toast = useToast()
 const documents = ref([])
 const filter = ref('all')
 const query = ref('')
@@ -182,14 +184,17 @@ const loadDocuments = () => {
 
 const deleteDocument = (id) => {
   if (confirm('Czy na pewno chcesz usunąć ten dokument?')) {
-    documents.value = removeDocument(id)
+    removeDocument(id)
+    documents.value = getDocuments()
+    toast.success('Dokument został usunięty')
   }
 }
 
 const deleteAll = () => {
   if (confirm('Czy na pewno chcesz usunąć WSZYSTKIE dokumenty? Operacji nie można cofnąć.')) {
-    documents.value = []
     clearDocuments()
+    documents.value = []
+    toast.success('Wszystkie dokumenty zostały usunięte')
   }
 }
 
