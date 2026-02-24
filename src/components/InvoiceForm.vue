@@ -171,8 +171,8 @@
                     <div class="flex-col gap-xs">
                       <select @change="applyProductToItem(index, $event.target.value)" class="form-control form-control-sm mb-xs">
                         <option value="">Magazyn...</option>
-                        <option v-for="product in filteredProducts" :key="product.name" :value="product.name">
-                          {{ product.name }}
+                        <option v-for="product in filteredProducts" :key="product.id" :value="product.name">
+                          {{ product.name }} (Stan: {{ product.stock }})
                         </option>
                       </select>
                       <input
@@ -184,7 +184,16 @@
                     </div>
                   </td>
                   <td>
-                    <input v-model.number="item.quantity" type="number" min="1" class="form-control" :class="{ 'is-invalid': validated && item.quantity <= 0 }" />
+                    <input
+                      v-model.number="item.quantity"
+                      type="number"
+                      min="1"
+                      class="form-control"
+                      :class="{ 'is-invalid': (validated && item.quantity <= 0) || isStockInsufficient(item) }"
+                    />
+                    <small v-if="isStockInsufficient(item)" class="text-danger">
+                      Dostępne: {{ getProductStock(item.itemId) }}
+                    </small>
                   </td>
                   <td>
                     <input v-model.number="item.price" type="number" min="0" step="0.01" class="form-control" :class="{ 'is-invalid': validated && item.price < 0 }" />
@@ -515,6 +524,17 @@ const formatGrossValue = (item) => {
   return (item.price * item.quantity * (1 - discount) * (1 + vatToNumber(item.vat) / 100)).toFixed(2)
 }
 
+const getProductStock = (itemId) => {
+  if (!itemId) return 999
+  const product = availableProducts.value.find(p => p.id === itemId)
+  return product ? product.stock : 0
+}
+
+const isStockInsufficient = (item) => {
+  if (!isSalesDoc.value || !item.itemId) return false
+  return item.quantity > getProductStock(item.itemId)
+}
+
 const resolvePrice = (productName, productId = '') => {
   if (!selectedPriceListId.value) {
     const product = availableProducts.value.find((entry) =>
@@ -828,6 +848,13 @@ watch(
 
 .is-invalid {
   border-color: var(--danger);
+}
+
+.text-danger {
+  color: var(--danger);
+  font-size: var(--text-xs);
+  display: block;
+  margin-top: 2px;
 }
 
 .bg-secondary-50 {

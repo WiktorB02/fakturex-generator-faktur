@@ -1,7 +1,9 @@
+import { getItem } from '@/services/secureStore'
+
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
-const getToken = () => localStorage.getItem('apiToken')
-const getCompanyId = () => localStorage.getItem('companyId')
+const getToken = () => getItem('apiToken')
+const getCompanyId = () => getItem('companyId')
 
 export const hasApiBase = () => !!API_BASE
 

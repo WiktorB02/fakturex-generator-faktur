@@ -4,6 +4,7 @@
       <router-view />
     </MainLayout>
     <router-view v-else />
+    <ToastManager />
   </div>
 </template>
 
@@ -11,6 +12,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import MainLayout from '@/components/layout/MainLayout.vue'
+import ToastManager from '@/components/ui/ToastManager.vue'
 
 const route = useRoute()
 const showLayout = computed(() => route.name !== 'login')

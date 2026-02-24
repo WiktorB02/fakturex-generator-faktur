@@ -1,552 +1,419 @@
 <template>
   <div class="preview-page">
-    <div class="actions-bar">
-      <div>
-        <button class="btn btn-ghost" @click="goBack">
-          <i class="fa fa-arrow-left"></i> Powrót
+    <div class="preview-toolbar no-print">
+      <div class="toolbar-left">
+        <button class="btn btn-secondary" @click="goBack">
+          <i class="fa fa-arrow-left"></i> Wróć
         </button>
       </div>
-
-      <div class="action-buttons">
-        <button class="btn btn-secondary" @click="window.print()">
-          <i class="fa fa-print"></i> Drukuj
-        </button>
-        <button class="btn btn-primary" @click="downloadPDF">
-          <i class="fa fa-download"></i> Pobierz PDF
+      <div class="toolbar-center">
+        <h2>Podgląd dokumentu</h2>
+      </div>
+      <div class="toolbar-right">
+        <button class="btn btn-primary" @click="print">
+          <i class="fa fa-print"></i> Drukuj / PDF
         </button>
       </div>
     </div>
 
     <div class="preview-container">
-      <div
-        id="pdf"
-        class="invoice-document"
-        :class="`layout-${template.layout}`"
-        :style="{ '--accent': template.accentColor }"
-      >
+      <div class="a4-page" id="invoice-content">
         <!-- Header -->
-        <div class="invoice-header">
-          <div class="company-logo" v-if="template.logo">
-            <img :src="template.logo" alt="Logo" />
-          </div>
-          <div class="document-meta">
-            <h1>{{ typeLabel }}</h1>
-            <div class="meta-row">
-              <span class="label">{{ labels.number }}:</span>
-              <span class="value">{{ doc.number }}</span>
-            </div>
-            <div class="meta-row">
-              <span class="label">{{ labels.issueDate }}:</span>
-              <span class="value">{{ invoiceDate }}</span>
-            </div>
-            <div class="meta-row">
-              <span class="label">{{ labels.saleDate }}:</span>
-              <span class="value">{{ saleDate }}</span>
+        <header class="doc-header">
+          <div class="brand-section">
+            <h1 class="company-name">{{ issuer.name }}</h1>
+            <div class="company-details">
+              <p v-if="issuer.nip">NIP: {{ issuer.nip }}</p>
+              <p>{{ issuer.address }}</p>
             </div>
           </div>
-        </div>
+          <div class="doc-meta">
+            <h2 class="doc-title">{{ docTitle }}</h2>
+            <p class="doc-number">{{ document.number }}</p>
+            <div class="meta-grid">
+              <div class="meta-row">
+                <span>Data wystawienia:</span>
+                <strong>{{ formatDate(document.issueDate) }}</strong>
+              </div>
+              <div class="meta-row">
+                <span>Data sprzedaży:</span>
+                <strong>{{ formatDate(document.saleDate) }}</strong>
+              </div>
+              <div class="meta-row" v-if="document.dueDate">
+                <span>Termin płatności:</span>
+                <strong>{{ formatDate(document.dueDate) }}</strong>
+              </div>
+            </div>
+          </div>
+        </header>
 
         <!-- Parties -->
-        <div class="invoice-parties">
-          <div class="party issuer">
-            <h3>{{ labels.issuer }}</h3>
-            <div class="party-details">
-              <strong>{{ issuer.name }}</strong>
-              <div>{{ issuer.address }}</div>
-              <div>{{ issuer.nip ? `NIP: ${issuer.nip}` : '' }}</div>
-            </div>
+        <section class="parties-section">
+          <div class="party-box seller">
+            <h3>Sprzedawca</h3>
+            <p class="party-name">{{ issuer.name }}</p>
+            <p>NIP: {{ issuer.nip }}</p>
+            <p>{{ issuer.address }}</p>
           </div>
-          <div class="party counterparty">
-            <h3>{{ counterpartyTitle }}</h3>
-            <div class="party-details">
-              <strong>{{ counterparty.name }}</strong>
-              <div>{{ counterparty.address }}</div>
-              <div>{{ counterparty.nip ? `NIP: ${counterparty.nip}` : '' }}</div>
-            </div>
+          <div class="party-box buyer">
+            <h3>Nabywca</h3>
+            <p class="party-name">{{ counterparty.name }}</p>
+            <p v-if="counterparty.nip">NIP: {{ counterparty.nip }}</p>
+            <p>{{ counterparty.address }}</p>
           </div>
-        </div>
-
-        <div v-if="doc.relatedNumber" class="related-doc">
-          Powiązany dokument: <strong>{{ doc.relatedNumber }}</strong>
-        </div>
+        </section>
 
         <!-- Items -->
-        <table class="invoice-items">
-          <thead>
-            <tr>
-              <th class="text-left">{{ labels.description }}</th>
-              <th class="text-center">{{ labels.quantity }}</th>
-              <th class="text-right">{{ labels.netPrice }}</th>
-              <th class="text-right">VAT</th>
-              <th class="text-right">{{ labels.netValue }}</th>
-              <th class="text-right">{{ labels.grossValue }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="(item, index) in items" :key="index">
-              <td class="text-left">{{ item.description }}</td>
-              <td class="text-center">{{ item.quantity }}</td>
-              <td class="text-right">{{ formatCurrency(item.price) }}</td>
-              <td class="text-right">{{ item.vat }}{{ item.vat === 'zw' ? '' : '%' }}</td>
-              <td class="text-right">{{ formatCurrency(item.quantity * item.price) }}</td>
-              <td class="text-right">{{ formatCurrency(item.quantity * item.price * (1 + vatToNumber(item.vat) / 100)) }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <section class="items-section">
+          <table class="doc-table">
+            <thead>
+              <tr>
+                <th class="col-idx">Lp.</th>
+                <th class="col-name">Nazwa towaru / usługi</th>
+                <th class="col-qty text-right">Ilość</th>
+                <th class="col-unit">Jm.</th>
+                <th class="col-price text-right">Cena netto</th>
+                <th class="col-vat text-right">VAT</th>
+                <th class="col-gross text-right">Wartość brutto</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(item, index) in items" :key="index">
+                <td class="col-idx">{{ index + 1 }}</td>
+                <td class="col-name">{{ item.description }}</td>
+                <td class="col-qty text-right">{{ item.quantity }}</td>
+                <td class="col-unit">szt.</td>
+                <td class="col-price text-right">{{ formatMoney(item.price) }}</td>
+                <td class="col-vat text-right">{{ item.vat === 'zw' ? 'zw' : item.vat + '%' }}</td>
+                <td class="col-gross text-right">{{ formatGross(item) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
 
         <!-- Summary -->
-        <div class="invoice-footer-section">
-          <div class="invoice-notes" v-if="doc.notes || showPaymentInfo || template.terms">
-            <div v-if="showPaymentInfo" class="payment-info">
-              <h3>{{ labels.paymentInfo }}</h3>
-              <p>
-                <span class="label">{{ labels.dueDate }}:</span> {{ dueDate }}
-              </p>
-              <p>
-                <span class="label">{{ labels.paymentMethod }}:</span> {{ doc.paymentMethod }}
-              </p>
-              <p v-if="settings.payment.bankAccount">
-                <span class="label">{{ labels.bankAccount }}:</span> {{ settings.payment.bankAccount }}
-              </p>
-              <p v-if="settings.payment.bankName">
-                <span class="label">{{ labels.bankName }}:</span> {{ settings.payment.bankName }}
-              </p>
+        <section class="summary-section">
+          <div class="summary-notes">
+            <div v-if="document.paymentMethod" class="payment-info">
+              <p>Sposób płatności: <strong>{{ document.paymentMethod }}</strong></p>
+              <p v-if="document.paymentStatus === 'paid'" class="status-paid">ZAPŁACONO</p>
             </div>
-
-            <div v-if="doc.notes" class="notes-block">
-              <h3>{{ labels.notes }}</h3>
-              <p>{{ doc.notes }}</p>
-            </div>
-
-            <div v-if="template.terms" class="terms-block">
-              <h3>{{ labels.terms }}</h3>
-              <p>{{ template.terms }}</p>
+            <div v-if="document.notes" class="doc-notes">
+              <h4>Uwagi:</h4>
+              <p>{{ document.notes }}</p>
             </div>
           </div>
-
-          <div class="invoice-totals">
+          <div class="summary-totals">
             <div class="total-row">
-              <span>{{ labels.netTotal }}:</span>
-              <span>{{ totalNetto }} {{ currency }}</span>
+              <span>Razem netto:</span>
+              <span>{{ totals.netto }} {{ currency }}</span>
             </div>
             <div class="total-row">
-              <span>VAT:</span>
-              <span>{{ totalVat }} {{ currency }}</span>
+              <span>Razem VAT:</span>
+              <span>{{ totals.vat }} {{ currency }}</span>
             </div>
             <div class="total-row grand-total">
-              <span>{{ labels.grossTotal }}:</span>
-              <span>{{ totalBrutto }} {{ currency }}</span>
+              <span>Do zapłaty:</span>
+              <span>{{ totals.brutto }} {{ currency }}</span>
             </div>
           </div>
-        </div>
+        </section>
 
-        <div class="invoice-footer-note">
-          <p>{{ template.footerNote }}</p>
-        </div>
+        <!-- Footer -->
+        <footer class="doc-footer">
+          <p>Dokument wygenerowany elektronicznie w systemie Fakturex.</p>
+        </footer>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { useRoute, useRouter } from 'vue-router'
-import { ref, computed } from 'vue'
-import html2canvas from 'html2canvas'
-import jsPDF from 'jspdf'
-import { getSettings } from '@/services/settings'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 
-const route = useRoute()
 const router = useRouter()
+const route = useRoute()
 
 const issuer = ref({})
 const counterparty = ref({})
-const doc = ref({})
+const document = ref({})
 const items = ref([])
+const totals = ref({ netto: 0, vat: 0, brutto: 0 })
 const currency = ref('PLN')
-const settings = ref(getSettings())
-const template = computed(() => settings.value.template)
-const language = computed(() => doc.value.language || template.value.language || 'pl')
-let filename = 'dokument.pdf'
 
-if (route.query.data) {
-  try {
-    const parsed = JSON.parse(decodeURIComponent(route.query.data))
-    issuer.value = parsed.issuer || {}
-    counterparty.value = parsed.counterparty || parsed.client || {}
-    doc.value = parsed.document || parsed.invoice || {}
-    items.value = parsed.items || []
-    currency.value = parsed.currency || 'PLN'
-    filename = parsed.filename || filename
-  } catch (error) {
-    console.error('Błąd podczas dekodowania danych faktury:', error)
-  }
+const typeLabels = {
+  invoice: 'Faktura VAT',
+  proforma: 'Proforma',
+  advance: 'Faktura Zaliczkowa',
+  final: 'Faktura Końcowa',
+  correction: 'Korekta',
+  receipt: 'Paragon',
+  wz: 'Wydanie Zewnętrzne (WZ)',
+  pz: 'Przyjęcie Zewnętrzne (PZ)'
 }
 
-const invoiceDate = computed(() => {
-  if (doc.value.issueDate) {
-    const parsedDate = new Date(doc.value.issueDate)
-    return isNaN(parsedDate) ? 'Data nieprawidłowa' : parsedDate.toLocaleDateString('pl-PL')
-  }
-  return 'Brak daty'
-})
+const docTitle = computed(() => typeLabels[document.value.type] || 'Dokument')
 
-const saleDate = computed(() => {
-  if (doc.value.saleDate) {
-    const parsedDate = new Date(doc.value.saleDate)
-    return isNaN(parsedDate) ? 'Data nieprawidłowa' : parsedDate.toLocaleDateString('pl-PL')
-  }
-  return 'Brak daty'
-})
-
-const vatToNumber = (vat) => {
-  if (vat === 'zw') return 0
-  const parsed = parseFloat(String(vat))
-  return Number.isNaN(parsed) ? 0 : parsed
+const formatDate = (dateStr) => {
+  if (!dateStr) return ''
+  return new Date(dateStr).toLocaleDateString('pl-PL')
 }
 
-const formatCurrency = (val) => {
-  return Number(val).toFixed(2)
+const formatMoney = (val) => Number(val).toFixed(2)
+
+const formatGross = (item) => {
+  const discount = Number(item.discountPercent || 0) / 100
+  const vatRate = item.vat === 'zw' ? 0 : Number(item.vat) / 100
+  const net = item.price * item.quantity * (1 - discount)
+  return (net * (1 + vatRate)).toFixed(2)
 }
 
-const totalNetto = computed(() =>
-  items.value.reduce((sum, item) => sum + item.quantity * item.price, 0).toFixed(2)
-)
+const goBack = () => router.back()
+const print = () => window.print()
 
-const totalVat = computed(() =>
-  items.value.reduce((sum, item) => sum + item.quantity * item.price * (vatToNumber(item.vat) / 100), 0).toFixed(2)
-)
-
-const totalBrutto = computed(() =>
-  items.value.reduce((sum, item) => sum + item.quantity * item.price * (1 + vatToNumber(item.vat) / 100), 0).toFixed(2)
-)
-
-const typeLabel = computed(() => {
-  const labels = {
-    invoice: 'Faktura VAT',
-    proforma: 'Proforma',
-    advance: 'Faktura zaliczkowa',
-    final: 'Faktura końcowa',
-    correction: 'Korekta',
-    receipt: 'Paragon',
-    pz: 'PZ (przyjęcie zewnętrzne)',
-    wz: 'WZ (wydanie zewnętrzne)',
-    rw: 'RW (rozchód wewnętrzny)',
-    mm: 'MM (przesunięcie)',
-    inw: 'INW (inwentaryzacja)',
-    so: 'Zamówienie sprzedaży',
-    po: 'Zamówienie zakupu',
-    rma: 'Zwrot/RMA',
-    expense: 'Wydatek'
-  }
-  return labels[doc.value.type] || 'Dokument'
-})
-
-const labels = computed(() => {
-  const translations = {
-    pl: {
-      number: 'Numer',
-      issueDate: 'Data wystawienia',
-      saleDate: 'Data sprzedaży',
-      issuer: 'Wystawca',
-      description: 'Opis',
-      quantity: 'Ilość',
-      netPrice: 'Cena netto',
-      netValue: 'Wartość netto',
-      grossValue: 'Wartość brutto',
-      netTotal: 'Suma netto',
-      grossTotal: 'Suma brutto',
-      paymentInfo: 'Informacje o płatności',
-      dueDate: 'Termin płatności',
-      paymentMethod: 'Metoda płatności',
-      bankAccount: 'Konto',
-      bankName: 'Bank',
-      notes: 'Uwagi',
-      terms: 'Warunki'
-    },
-    en: {
-      number: 'Number',
-      issueDate: 'Issue date',
-      saleDate: 'Sale date',
-      issuer: 'Issuer',
-      description: 'Description',
-      quantity: 'Qty',
-      netPrice: 'Net price',
-      netValue: 'Net value',
-      grossValue: 'Gross value',
-      netTotal: 'Net total',
-      grossTotal: 'Gross total',
-      paymentInfo: 'Payment details',
-      dueDate: 'Due date',
-      paymentMethod: 'Payment method',
-      bankAccount: 'Account',
-      bankName: 'Bank',
-      notes: 'Notes',
-      terms: 'Terms'
+onMounted(() => {
+  if (route.query.data) {
+    try {
+      const data = JSON.parse(decodeURIComponent(route.query.data))
+      issuer.value = data.issuer || {}
+      counterparty.value = data.counterparty || {}
+      document.value = data.document || {}
+      items.value = data.items || []
+      totals.value = data.totals || { netto: 0, vat: 0, brutto: 0 }
+      currency.value = data.currency || 'PLN'
+    } catch (e) {
+      console.error('Błąd odczytu danych:', e)
     }
   }
-  return translations[language.value] || translations.pl
 })
-
-const counterpartyTitle = computed(() => {
-  const isEn = language.value === 'en'
-  if (doc.value.type === 'pz') return isEn ? 'Supplier' : 'Dostawca'
-  if (doc.value.type === 'wz') return isEn ? 'Recipient' : 'Odbiorca'
-  if (doc.value.type === 'rw') return isEn ? 'Internal' : 'Rozchód'
-  if (doc.value.type === 'mm') return isEn ? 'Transfer' : 'Przesunięcie'
-  if (doc.value.type === 'inw') return isEn ? 'Inventory' : 'Inwentaryzacja'
-  if (doc.value.type === 'expense') return isEn ? 'Counterparty' : 'Kontrahent'
-  return isEn ? 'Buyer' : 'Nabywca'
-})
-
-const showPaymentInfo = computed(() =>
-  settings.value.template.showPaymentInfo &&
-  ['invoice', 'proforma', 'advance', 'final', 'correction'].includes(doc.value.type)
-)
-
-const dueDate = computed(() => {
-  if (!doc.value.dueDate) return '—'
-  const parsed = new Date(doc.value.dueDate)
-  return isNaN(parsed) ? '—' : parsed.toLocaleDateString('pl-PL')
-})
-
-const downloadPDF = async () => {
-  const element = window.document.getElementById('pdf')
-  const canvas = await html2canvas(element, { scale: 2 })
-  const imgData = canvas.toDataURL('image/png')
-  const pdf = new jsPDF('p', 'mm', 'a4')
-  const pdfWidth = pdf.internal.pageSize.getWidth()
-  const pdfHeight = pdf.internal.pageSize.getHeight()
-  pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight)
-  pdf.save(filename)
-}
-
-const goBack = () => {
-  router.back()
-}
 </script>
 
 <style scoped>
 .preview-page {
+  background: var(--secondary-600);
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
   align-items: center;
-  padding-bottom: var(--spacing-3xl);
+  padding: var(--spacing-lg);
 }
 
-.actions-bar {
+.preview-toolbar {
+  width: 100%;
+  max-width: 210mm;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
-  max-width: 210mm; /* A4 width */
-}
-
-.action-buttons {
-  display: flex;
-  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+  color: white;
 }
 
 .preview-container {
-  width: 100%;
-  max-width: 210mm;
-  background: #525659;
-  padding: 40px;
-  border-radius: var(--radius-lg);
+  background: white;
+  padding: 0;
   box-shadow: var(--shadow-xl);
 }
 
-.invoice-document {
+.a4-page {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 20mm;
   background: white;
-  width: 100%;
-  min-height: 297mm; /* A4 height */
-  padding: 40px;
-  box-sizing: border-box;
-  font-family: var(--font-sans);
-  color: #0f172a;
+  color: var(--secondary-900);
+  font-size: 10pt;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Layout variants could be added here based on .layout-compact etc */
-
-.invoice-header {
+/* Header */
+.doc-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 40px;
-  border-bottom: 2px solid var(--accent, #6366f1);
+  border-bottom: 2px solid var(--primary-600);
   padding-bottom: 20px;
+  margin-bottom: 30px;
 }
 
-.company-logo img {
-  max-height: 80px;
-  max-width: 200px;
+.company-name {
+  font-size: 18pt;
+  font-weight: bold;
+  color: var(--primary-600);
+  margin: 0 0 5px 0;
 }
 
-.document-meta {
+.company-details {
+  color: var(--secondary-600);
+  line-height: 1.4;
+}
+
+.doc-meta {
   text-align: right;
-  flex: 1;
 }
 
-.document-meta h1 {
-  color: var(--accent, #6366f1);
-  margin: 0 0 10px 0;
-  font-size: 24px;
+.doc-title {
+  font-size: 16pt;
+  font-weight: bold;
+  color: var(--secondary-900);
+  margin: 0;
   text-transform: uppercase;
 }
 
+.doc-number {
+  font-size: 12pt;
+  color: var(--secondary-600);
+  margin: 5px 0 15px 0;
+}
+
+.meta-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .meta-row {
-  margin-bottom: 4px;
-  font-size: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
 }
 
-.meta-row .label {
-  color: #64748b;
-  margin-right: 8px;
-}
-
-.meta-row .value {
-  font-weight: 600;
-}
-
-.invoice-parties {
+/* Parties */
+.parties-section {
   display: flex;
   justify-content: space-between;
   margin-bottom: 40px;
   gap: 40px;
 }
 
-.party {
+.party-box {
   flex: 1;
 }
 
-.party h3 {
-  font-size: 12px;
+.party-box h3 {
+  font-size: 9pt;
   text-transform: uppercase;
-  color: #64748b;
-  margin-bottom: 8px;
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 4px;
+  color: var(--secondary-500);
+  margin-bottom: 10px;
+  border-bottom: 1px solid var(--secondary-200);
+  padding-bottom: 5px;
 }
 
-.party-details {
-  font-size: 14px;
-  line-height: 1.6;
+.party-name {
+  font-weight: bold;
+  font-size: 11pt;
+  margin-bottom: 5px;
 }
 
-.related-doc {
-  margin-bottom: 20px;
-  padding: 10px;
-  background: #f1f5f9;
-  border-radius: 4px;
-  font-size: 14px;
+/* Table */
+.items-section {
+  flex: 1;
 }
 
-.invoice-items {
+.doc-table {
   width: 100%;
   border-collapse: collapse;
-  margin-bottom: 40px;
 }
 
-.invoice-items th {
-  background: var(--accent, #6366f1);
-  color: white;
-  padding: 10px;
-  font-size: 12px;
-  text-transform: uppercase;
+.doc-table th {
+  background: var(--secondary-50);
+  padding: 8px;
+  text-align: left;
+  font-weight: bold;
+  font-size: 9pt;
+  border-bottom: 1px solid var(--secondary-200);
 }
 
-.invoice-items td {
-  padding: 10px;
-  border-bottom: 1px solid #e2e8f0;
-  font-size: 14px;
+.doc-table td {
+  padding: 8px;
+  border-bottom: 1px solid var(--secondary-100);
+  vertical-align: top;
 }
 
-.invoice-items tr:last-child td {
-  border-bottom: none;
-}
-
-.text-left { text-align: left; }
-.text-center { text-align: center; }
 .text-right { text-align: right; }
 
-.invoice-footer-section {
+.col-idx { width: 40px; color: var(--secondary-500); }
+.col-qty { width: 80px; }
+.col-unit { width: 50px; }
+.col-price { width: 100px; }
+.col-vat { width: 60px; }
+.col-gross { width: 120px; font-weight: bold; }
+
+/* Summary */
+.summary-section {
+  margin-top: 30px;
   display: flex;
   justify-content: space-between;
-  margin-bottom: 40px;
+  page-break-inside: avoid;
 }
 
-.invoice-notes {
+.summary-notes {
   flex: 1;
   padding-right: 40px;
-  font-size: 13px;
 }
 
-.invoice-notes h3 {
-  font-size: 12px;
-  text-transform: uppercase;
-  color: #64748b;
-  margin-bottom: 4px;
-  margin-top: 16px;
+.payment-info {
+  margin-bottom: 20px;
 }
 
-.invoice-notes h3:first-child {
-  margin-top: 0;
+.status-paid {
+  display: inline-block;
+  background: var(--secondary-100);
+  color: var(--secondary-700);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 8pt;
+  margin-top: 5px;
+  font-weight: bold;
 }
 
-.invoice-totals {
-  width: 300px;
+.doc-notes h4 {
+  font-size: 9pt;
+  margin-bottom: 5px;
+}
+
+.doc-notes p {
+  font-size: 9pt;
+  color: var(--secondary-600);
+  font-style: italic;
+}
+
+.summary-totals {
+  width: 250px;
 }
 
 .total-row {
   display: flex;
   justify-content: space-between;
-  padding: 8px 0;
-  border-bottom: 1px solid #e2e8f0;
-  font-size: 14px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--secondary-200);
 }
 
 .total-row.grand-total {
+  border-top: 2px solid var(--secondary-200);
   border-bottom: none;
-  font-size: 18px;
+  font-size: 14pt;
   font-weight: bold;
-  color: var(--accent, #6366f1);
-  border-top: 2px solid #e2e8f0;
-  margin-top: 8px;
-  padding-top: 16px;
+  margin-top: 10px;
+  padding-top: 10px;
+  color: var(--primary-600);
 }
 
-.invoice-footer-note {
-  position: absolute;
-  bottom: 40px;
-  left: 40px;
-  right: 40px;
+/* Footer */
+.doc-footer {
+  margin-top: 50px;
+  padding-top: 10px;
+  border-top: 1px solid var(--secondary-200);
   text-align: center;
-  font-size: 12px;
-  color: #94a3b8;
-  border-top: 1px solid #e2e8f0;
-  padding-top: 20px;
+  color: var(--secondary-400);
+  font-size: 8pt;
 }
 
 @media print {
-  .preview-page {
-    padding: 0;
-    background: white;
-  }
-  .actions-bar, .preview-container {
-    box-shadow: none;
-    padding: 0;
-    background: transparent;
-  }
-  .actions-bar {
-    display: none;
-  }
-  .preview-container {
-    width: 100%;
-    max-width: none;
-  }
-  .invoice-document {
-    padding: 0;
-    min-height: auto;
-  }
+  .no-print { display: none !important; }
+  .preview-page { background: white; padding: 0; }
+  .preview-container { box-shadow: none; }
+  .a4-page { width: 100%; min-height: 0; padding: 0; }
+  @page { margin: 15mm; }
 }
 </style>
