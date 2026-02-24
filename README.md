@@ -50,6 +50,14 @@ npm run dev
 
 Frontend: http://127.0.0.1:5174/
 
+### 4) Running Frontend Only (without Backend)
+If you only want to view the UI, you can skip the backend setup and run:
+```bash
+npm install
+npm run dev
+```
+Note: API calls will fail without the backend.
+
 ## Konfiguracja środowiska
 Pliki:
 - [backend/.env](backend/.env)
