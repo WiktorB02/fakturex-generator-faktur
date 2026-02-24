@@ -39,7 +39,7 @@ npm run prisma:migrate -- --name init
 npm run start:dev
 ```
 
-Backend domyślnie startuje na porcie `3002` (ustawiane przez `PORT`).
+Backend domyślnie startuje na porcie `3001` (ustawiane przez `PORT`).
 
 ### 3) Frontend
 ```bash
@@ -48,17 +48,23 @@ npm install
 npm run dev
 ```
 
-Frontend: http://127.0.0.1:5174/
+Frontend: http://127.0.0.1:5173/
 
 ## Konfiguracja środowiska
 Pliki:
 - [backend/.env](backend/.env)
 - [.env](.env)
 
-Przykład:
+Przykład backend/.env:
 ```
-VITE_API_URL=http://localhost:3002
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/fakturex?schema=public
+PORT=3001
+JWT_SECRET=secret
+```
+
+Przykład .env (root):
+```
+VITE_API_URL=http://localhost:3001
 ```
 
 ## Dane testowe

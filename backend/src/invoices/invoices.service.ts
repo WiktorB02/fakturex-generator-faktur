@@ -254,31 +254,51 @@ export class InvoicesService {
 
   async update(companyId: string, id: string, dto: UpdateInvoiceDto) {
     const invoice = await this.get(companyId, id)
+    const isStockDoc = ['INVOICE', 'RECEIPT', 'NO_VAT'].includes(invoice.type)
 
-    // Simplistic update: Just update fields, re-calculate totals if items changed
-    // This is complex for invoices due to stock, but implemented basically here.
-    // Ideally we should revert stock changes of old items and apply new ones.
-    // For now, let's just update basic fields and items without stock recalc logic for PATCH
-    // unless explicitly requested, which is risky.
-    // Assuming this is metadata update for now or simple corrections before finalization.
+    return this.prisma.$transaction(async (tx) => {
+      // If items are modified, handle stock
+      if (dto.items) {
+        // 1. Revert stock for OLD items
+        if (isStockDoc) {
+          for (const item of invoice.items) {
+            if (item.productId && item.unit !== 'HOUR') {
+              await tx.product.update({
+                where: { id: item.productId },
+                data: { stock: { increment: Number(item.quantity) } }
+              })
+            }
+          }
+        }
 
-    // If items are present, we replace them.
-    if (dto.items) {
-       // Logic to replace items is complex.
-       // Delete old items, create new ones.
-       // Re-calc totals.
-       await this.prisma.invoiceItem.deleteMany({ where: { invoiceId: id } })
-       const { items, totals } = calcTotals(dto.type || invoice.type, dto.items as any)
+        // 2. Validate and prepare NEW items
+        const { items: newItems, totals } = calcTotals(dto.type || invoice.type, dto.items as any)
 
-       return this.prisma.invoice.update({
-         where: { id },
-         data: {
-           ...dto as any, // Cast to any to avoid strict type issues with Partial
-           totalNet: totals.totalNet,
-           totalVat: totals.totalVat,
-           totalGross: totals.totalGross,
-           items: {
-             create: items.map((item) => ({
+        if (isStockDoc) {
+          for (const item of newItems) {
+            if (item.productId && item.unit !== 'HOUR') {
+              const product = await tx.product.findUnique({ where: { id: item.productId } })
+              if (!product) continue
+              if (product.stock < Number(item.quantity)) {
+                throw new BadRequestException(`Niewystarczający stan magazynowy dla produktu: ${item.name}. Dostępne: ${product.stock}, Wymagane: ${item.quantity}`)
+              }
+            }
+          }
+        }
+
+        // 3. Delete old items
+        await tx.invoiceItem.deleteMany({ where: { invoiceId: id } })
+
+        // 4. Update Invoice
+        const updatedInvoice = await tx.invoice.update({
+          where: { id },
+          data: {
+            ...dto as any,
+            totalNet: totals.totalNet,
+            totalVat: totals.totalVat,
+            totalGross: totals.totalGross,
+            items: {
+              create: newItems.map((item) => ({
                 productId: item.productId ?? null,
                 name: item.name,
                 quantity: item.quantity,
@@ -287,35 +307,53 @@ export class InvoicesService {
                 vatRate: item.vatRate,
                 discount: item.discount ?? 0
               }))
-           }
-         },
-         include: { items: true }
-       })
-    }
+            }
+          },
+          include: { items: true }
+        })
 
-    return this.prisma.invoice.update({
-      where: { id },
-      data: dto as any
+        // 5. Apply stock deduction for NEW items
+        if (isStockDoc) {
+          for (const item of newItems) {
+            if (item.productId && item.unit !== 'HOUR') {
+              await tx.product.update({
+                where: { id: item.productId },
+                data: { stock: { decrement: Number(item.quantity) } }
+              })
+            }
+          }
+        }
+
+        return updatedInvoice
+      }
+
+      // If items not changed, just update metadata
+      return tx.invoice.update({
+        where: { id },
+        data: dto as any,
+        include: { items: true }
+      })
     })
   }
 
   async delete(companyId: string, id: string) {
     const invoice = await this.get(companyId, id)
-    // Should we revert stock?
-    // If it was INVOICE/RECEIPT, yes.
-    if (['INVOICE', 'RECEIPT', 'NO_VAT'].includes(invoice.type)) {
-       for (const item of invoice.items) {
-         if (item.productId) {
-           await this.prisma.product.update({
-             where: { id: item.productId },
-             data: { stock: { increment: Number(item.quantity) } }
-           })
-         }
-       }
-    }
 
-    // Delete items first (cascade usually handles this but being safe)
-    await this.prisma.invoiceItem.deleteMany({ where: { invoiceId: id } })
-    return this.prisma.invoice.delete({ where: { id } })
+    return this.prisma.$transaction(async (tx) => {
+      // Revert stock
+      if (['INVOICE', 'RECEIPT', 'NO_VAT'].includes(invoice.type)) {
+         for (const item of invoice.items) {
+           if (item.productId && item.unit !== 'HOUR') {
+             await tx.product.update({
+               where: { id: item.productId },
+               data: { stock: { increment: Number(item.quantity) } }
+             })
+           }
+         }
+      }
+
+      await tx.invoiceItem.deleteMany({ where: { invoiceId: id } })
+      return tx.invoice.delete({ where: { id } })
+    })
   }
 }
