@@ -1,58 +1,92 @@
 <template>
   <div class="index-container">
-    <div class="header">
-      <h1 class="app-title">Fakturex</h1>
-      <div class="header-actions">
-        <div class="buttons-container">
-          <button v-if="canAccess('manageSettings')" @click="goToSettings" class="settings-btn">
-            <i class="fa fa-cogs"></i> Ustawienia
+    <header class="header">
+      <div class="header-left">
+        <h1 class="app-title">Fakturex</h1>
+        <nav class="main-nav">
+          <button v-if="canAccess('manageDocuments')" @click="goToInvoiceList" class="nav-btn">
+            <i class="fa fa-list"></i> Rejestr
           </button>
-          <button v-if="canAccess('manageDocuments')" @click="goToInvoiceList" class="invoice-list-btn">
-            <i class="fa fa-list"></i> Rejestr dokumentów
-          </button>
-          <button v-if="canAccess('manageContacts')" @click="goToContacts" class="contacts-btn">
+          <button v-if="canAccess('manageContacts')" @click="goToContacts" class="nav-btn">
             <i class="fa fa-address-book"></i> Kontrahenci
           </button>
-          <button v-if="canAccess('manageWarehouse')" @click="goToWarehouse" class="warehouse-btn">
+          <button v-if="canAccess('manageWarehouse')" @click="goToWarehouse" class="nav-btn">
             <i class="fa fa-cubes"></i> Magazyn
           </button>
-          <button v-if="canAccess('managePayments')" @click="goToPayments" class="payments-btn">
+          <button v-if="canAccess('managePayments')" @click="goToPayments" class="nav-btn">
             <i class="fa fa-credit-card"></i> Płatności
           </button>
-          <button v-if="canAccess('manageReports')" @click="goToReports" class="reports-btn">
+          <button v-if="canAccess('manageReports')" @click="goToReports" class="nav-btn">
             <i class="fa fa-chart-line"></i> Raporty
           </button>
-          <button v-if="canAccess('manageSalesOrders')" @click="goToSalesOrders" class="sales-orders-btn">
-            <i class="fa fa-shopping-cart"></i> Zam. sprzedaży
+          <button v-if="canAccess('manageSettings')" @click="goToSettings" class="nav-btn">
+            <i class="fa fa-cogs"></i> Ustawienia
           </button>
-          <button v-if="canAccess('managePurchaseOrders')" @click="goToPurchaseOrders" class="purchase-orders-btn">
-            <i class="fa fa-truck"></i> Zam. zakupu
-          </button>
-          <button v-if="canAccess('managePicking')" @click="goToPicking" class="picking-btn">
-            <i class="fa fa-boxes"></i> Picking
-          </button>
-          <button v-if="canAccess('manageReturns')" @click="goToReturns" class="returns-btn">
-            <i class="fa fa-rotate-left"></i> Zwroty
-          </button>
-          <button v-if="canAccess('managePriceLists')" @click="goToPriceLists" class="price-lists-btn">
-            <i class="fa fa-tags"></i> Cenniki
-          </button>
+        </nav>
+      </div>
+
+      <div class="user-area" v-if="user">
+        <div class="user-info">
+          <span class="user-name">{{ user.name }}</span>
+          <span class="user-role">{{ roleLabels[user.role] }}</span>
         </div>
-        <div v-if="user" class="user-area">
-          <div class="user-info">
-            <span class="user-name">{{ user.name }}</span>
-            <span class="user-role">{{ roleLabels[user.role] }}</span>
+        <button class="logout-btn" @click="handleLogout">
+          <i class="fa fa-sign-out-alt"></i>
+        </button>
+      </div>
+    </header>
+
+    <main class="dashboard-content" v-if="user">
+      <div class="welcome-banner">
+        <h2>Dzień dobry, {{ user.name.split(' ')[0] }}! 👋</h2>
+        <p>Oto podsumowanie Twojej firmy.</p>
+      </div>
+
+      <div class="section-title">Statystyki miesiąca</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon income"><i class="fa fa-wallet"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">Przychód</span>
+            <span class="stat-value">-- PLN</span>
           </div>
-          <button class="logout-btn" @click="handleLogout">Wyloguj</button>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon invoice"><i class="fa fa-file-invoice"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">Wystawione faktury</span>
+            <span class="stat-value">--</span>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon client"><i class="fa fa-users"></i></div>
+          <div class="stat-info">
+            <span class="stat-label">Nowi klienci</span>
+            <span class="stat-value">--</span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="main-content">
-      <button v-if="canAccess('createDocuments')" @click="goToInvoiceForm" class="invoice-btn">
-        Nowy dokument
-      </button>
-    </div>
+      <div class="section-title">Szybkie akcje</div>
+      <div class="actions-grid">
+        <div class="action-card primary" @click="goToInvoiceForm" v-if="canAccess('createDocuments')">
+          <i class="fa fa-plus-circle"></i>
+          <span>Nowa Faktura</span>
+        </div>
+        <div class="action-card secondary" @click="goToContacts" v-if="canAccess('manageContacts')">
+          <i class="fa fa-user-plus"></i>
+          <span>Dodaj Klienta</span>
+        </div>
+        <div class="action-card tertiary" @click="goToWarehouse" v-if="canAccess('manageWarehouse')">
+          <i class="fa fa-box-open"></i>
+          <span>Stan Magazynowy</span>
+        </div>
+         <div class="action-card" @click="goToReports" v-if="canAccess('manageReports')">
+          <i class="fa fa-chart-pie"></i>
+          <span>Zobacz Raporty</span>
+        </div>
+      </div>
+    </main>
   </div>
 </template>
 
@@ -106,26 +140,6 @@ const goToPayments = () => {
 
 const goToReports = () => {
   router.push({ name: 'reports' })
-}
-
-const goToSalesOrders = () => {
-  router.push({ name: 'sales-orders' })
-}
-
-const goToPurchaseOrders = () => {
-  router.push({ name: 'purchase-orders' })
-}
-
-const goToPicking = () => {
-  router.push({ name: 'picking' })
-}
-
-const goToReturns = () => {
-  router.push({ name: 'returns' })
-}
-
-const goToPriceLists = () => {
-  router.push({ name: 'price-lists' })
 }
 
 const handleLogout = () => {

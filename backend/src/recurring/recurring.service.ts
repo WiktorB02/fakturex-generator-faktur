@@ -13,12 +13,13 @@ const addMonths = (date: Date, months: number) => {
 export class RecurringService {
   constructor(private prisma: PrismaService, private invoicesService: InvoicesService) {}
 
-  list(companyId: string) {
-    return this.prisma.recurringInvoice.findMany({ where: { companyId }, orderBy: { nextRun: 'asc' } })
+  async list(companyId: string) {
+    const list = await this.prisma.recurringInvoice.findMany({ where: { companyId }, orderBy: { nextRun: 'asc' } })
+    return list.map(r => ({ ...r, template: JSON.parse(r.template) }))
   }
 
-  create(companyId: string, dto: CreateRecurringDto) {
-    return this.prisma.recurringInvoice.create({
+  async create(companyId: string, dto: CreateRecurringDto) {
+    const created = await this.prisma.recurringInvoice.create({
       data: {
         companyId,
         clientId: dto.clientId ?? null,
@@ -28,9 +29,10 @@ export class RecurringService {
         dueDays: dto.dueDays,
         intervalMonths: dto.intervalMonths,
         nextRun: new Date(dto.nextRun),
-        template: dto.template
+        template: JSON.stringify(dto.template)
       }
     })
+    return { ...created, template: JSON.parse(created.template) }
   }
 
   async runDue(companyId: string) {
@@ -43,6 +45,8 @@ export class RecurringService {
       const dueDate = new Date(today)
       dueDate.setDate(dueDate.getDate() + rec.dueDays)
 
+      const template = JSON.parse(rec.template)
+
       await this.invoicesService.create(companyId, {
         clientId: rec.clientId ?? undefined,
         type: rec.type,
@@ -52,11 +56,11 @@ export class RecurringService {
         dueDate: dueDate.toISOString().slice(0, 10),
         currency: rec.currency,
         language: rec.language,
-        issuerName: (rec.template as any).issuerName,
-        issuerNip: (rec.template as any).issuerNip,
-        issuerAddr: (rec.template as any).issuerAddr,
-        notes: (rec.template as any).notes,
-        items: (rec.template as any).items
+        issuerName: template.issuerName,
+        issuerNip: template.issuerNip,
+        issuerAddr: template.issuerAddr,
+        notes: template.notes,
+        items: template.items
       } as any)
 
       await this.prisma.recurringInvoice.update({

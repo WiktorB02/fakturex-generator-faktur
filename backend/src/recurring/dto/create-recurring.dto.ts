@@ -1,5 +1,5 @@
 import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator'
-import { Currency, InvoiceType } from '@prisma/client'
+import { Currency, InvoiceType } from '../../common/enums'
 
 export class CreateRecurringDto {
   @IsOptional()
