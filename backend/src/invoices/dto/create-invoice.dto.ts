@@ -1,6 +1,6 @@
 import { IsArray, IsDateString, IsEnum, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator'
 import { Type } from 'class-transformer'
-import { Currency, InvoiceType, Unit } from '@prisma/client'
+import { Currency, InvoiceType, Unit } from '../../common/enums'
 
 class CreateInvoiceItemDto {
   @IsString()
