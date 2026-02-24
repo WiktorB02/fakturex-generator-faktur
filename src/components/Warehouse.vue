@@ -1,382 +1,452 @@
 <template>
-  <div class="warehouse-page">
-    <header class="page-header">
-      <button class="ghost-btn" @click="goHome">Powrót</button>
-      <div>
-        <h1>Magazyn</h1>
-        <p>Zarządzaj stanami i dokumentami magazynowymi.</p>
+  <div class="page-content">
+    <div class="actions-bar">
+      <div class="tabs-wrapper">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          :class="['tab-btn', currentTab === tab.id && 'active']"
+          @click="currentTab = tab.id"
+        >
+          <i :class="tab.icon"></i> {{ tab.label }}
+        </button>
       </div>
-      <div class="header-actions">
+
+      <div class="action-buttons">
         <input ref="fileInput" type="file" accept=".csv" hidden @change="handleImport" />
-        <button class="ghost-btn" @click="exportInventory">Eksport CSV</button>
-        <button class="ghost-btn" @click="triggerImport">Import CSV</button>
-        <button class="primary-btn" @click="toggleItemForm">
-          {{ showItemForm ? 'Zamknij' : 'Dodaj towar' }}
+        <button class="btn btn-secondary" @click="exportInventory">
+          <i class="fa fa-download"></i> Eksport
+        </button>
+        <button class="btn btn-secondary" @click="triggerImport">
+          <i class="fa fa-upload"></i> Import
+        </button>
+        <button v-if="currentTab === 'inventory'" class="btn btn-primary" @click="toggleItemForm">
+          <i class="fa fa-plus"></i> Nowy towar
         </button>
       </div>
-    </header>
+    </div>
 
-    <section class="card" v-if="showItemForm">
-      <h2>{{ editingId ? 'Edytuj towar' : 'Nowy towar' }}</h2>
-      <div class="form-grid">
-        <label>
-          Nazwa *
-          <input v-model.trim="itemForm.name" type="text" />
-        </label>
-        <label>
-          SKU
-          <input v-model.trim="itemForm.sku" type="text" />
-        </label>
-        <label>
-          Jednostka
-          <input v-model.trim="itemForm.unit" type="text" />
-        </label>
-        <label>
-          Cena netto
-          <input v-model.number="itemForm.price" type="number" step="0.01" min="0" />
-        </label>
-        <label>
-          VAT
-          <select v-model="itemForm.vat">
-            <option v-for="rate in vatRates" :key="rate" :value="rate">
-              {{ rate === 'zw' ? 'zw' : rate + '%' }}
-            </option>
-          </select>
-        </label>
-        <label>
-          Magazyn
-          <select v-model="itemForm.warehouseId">
-            <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
-              {{ warehouse.name }}
-            </option>
-          </select>
-        </label>
-        <label>
-          Lokalizacja
-          <input v-model.trim="itemForm.location" type="text" />
-        </label>
-        <label>
-          Stan początkowy
-          <input v-model.number="itemForm.stock" type="number" step="1" min="0" />
-        </label>
-        <label>
-          Stan minimalny
-          <input v-model.number="itemForm.minStock" type="number" step="1" min="0" />
-        </label>
+    <!-- Tab Content: Inventory -->
+    <div v-if="currentTab === 'inventory'" class="tab-content">
+      <div v-if="showItemForm" class="card form-card mb-lg">
+        <div class="card-header">
+          <h3>{{ editingId ? 'Edytuj towar' : 'Nowy towar' }}</h3>
+          <button class="btn-icon" @click="toggleItemForm">
+            <i class="fa fa-times"></i>
+          </button>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Nazwa *</label>
+            <input v-model.trim="itemForm.name" type="text" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">SKU</label>
+            <input v-model.trim="itemForm.sku" type="text" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Jednostka</label>
+            <input v-model.trim="itemForm.unit" type="text" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cena netto</label>
+            <input v-model.number="itemForm.price" type="number" step="0.01" min="0" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">VAT</label>
+            <select v-model="itemForm.vat" class="form-control">
+              <option v-for="rate in vatRates" :key="rate" :value="rate">
+                {{ rate === 'zw' ? 'zw' : rate + '%' }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Magazyn</label>
+            <select v-model="itemForm.warehouseId" class="form-control">
+              <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
+                {{ warehouse.name }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Lokalizacja</label>
+            <input v-model.trim="itemForm.location" type="text" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Stan początkowy</label>
+            <input v-model.number="itemForm.stock" type="number" step="1" min="0" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Stan minimalny</label>
+            <input v-model.number="itemForm.minStock" type="number" step="1" min="0" class="form-control" />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" @click="resetItemForm">Wyczyść</button>
+          <button class="btn btn-primary" @click="saveItem">
+            {{ editingId ? 'Zapisz' : 'Dodaj' }}
+          </button>
+        </div>
       </div>
-      <div class="form-actions">
-        <button class="ghost-btn" @click="resetItemForm">Wyczyść</button>
-        <button class="primary-btn" @click="saveItem">
-          {{ editingId ? 'Zapisz' : 'Dodaj' }}
-        </button>
-      </div>
-    </section>
 
-    <section class="card">
-      <h2>Dokument magazynowy</h2>
-      <div class="form-grid">
-        <label>
-          Typ dokumentu
-          <select v-model="movement.type">
-            <option value="pz">PZ (przyjęcie)</option>
-            <option value="wz">WZ (wydanie)</option>
-            <option value="rw">RW (rozchód wewn.)</option>
-            <option value="mm">MM (przesunięcie)</option>
-            <option value="inw">INW (inwentaryzacja)</option>
-          </select>
-        </label>
-        <label>
-          Data
-          <input v-model="movement.date" type="date" />
-        </label>
-        <label>
-          Kontrahent
-          <select v-model="movement.contactId">
-            <option value="">Brak</option>
-            <option v-for="contact in contacts" :key="contact.id" :value="contact.id">
-              {{ contact.name }}
-            </option>
-          </select>
-        </label>
-        <label>
-          Magazyn
-          <select v-model="movement.warehouseId">
-            <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
-              {{ warehouse.name }}
-            </option>
-          </select>
-        </label>
-        <label v-if="movement.type === 'mm'">
-          Magazyn docelowy
-          <select v-model="movement.toWarehouseId">
-            <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
-              {{ warehouse.name }}
-            </option>
-          </select>
-        </label>
-        <label>
-          Produkt *
-          <select v-model="movement.itemId">
-            <option value="">Wybierz produkt</option>
-            <option v-for="item in filteredByWarehouse" :key="item.id" :value="item.id">
-              {{ item.name }} ({{ item.stock }} {{ item.unit }})
-            </option>
-          </select>
-        </label>
-        <label v-if="movement.type !== 'inw'">
-          Ilość *
-          <input v-model.number="movement.quantity" type="number" min="1" />
-        </label>
-        <label v-else>
-          Stan po inwentaryzacji *
-          <input v-model.number="movement.quantity" type="number" min="0" />
-        </label>
-        <label class="full-width">
-          Uwagi
-          <input v-model.trim="movement.note" type="text" />
-        </label>
-      </div>
-      <button class="primary-btn" @click="createMovement">Zapisz dokument</button>
-    </section>
-
-    <section class="card">
-      <div class="table-header">
-        <h2>Stany magazynowe</h2>
-        <div class="table-actions">
-          <select v-model="warehouseFilter">
+      <div class="card table-card">
+        <div class="table-header-filters">
+          <div class="search-wrapper">
+             <i class="fa fa-search search-icon"></i>
+            <input v-model.trim="query" placeholder="Szukaj produktu..." class="form-control with-icon" />
+          </div>
+          <select v-model="warehouseFilter" class="form-control warehouse-select">
             <option value="">Wszystkie magazyny</option>
             <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
               {{ warehouse.name }}
             </option>
           </select>
-          <input v-model.trim="query" placeholder="Szukaj w magazynie..." />
+        </div>
+
+        <div class="alert alert-warning" v-if="lowStockCount > 0">
+          <i class="fa fa-exclamation-triangle"></i>
+          Uwaga: {{ lowStockCount }} pozycji poniżej stanu minimalnego.
+        </div>
+
+        <div class="table-responsive">
+          <table v-if="filteredInventory.length" class="table">
+            <thead>
+              <tr>
+                <th>Nazwa</th>
+                <th>SKU</th>
+                <th>Jednostka</th>
+                <th>Magazyn</th>
+                <th>Stan</th>
+                <th>Zarezerwowane</th>
+                <th>Dostępne</th>
+                <th>Cena</th>
+                <th class="text-right">Akcje</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="item in filteredInventory" :key="item.id" :class="{ 'row-warning': isBelowMin(item) }">
+                <td class="font-medium">{{ item.name }}</td>
+                <td>{{ item.sku || '-' }}</td>
+                <td>{{ item.unit }}</td>
+                <td>{{ warehouseName(item.warehouseId) }}</td>
+                <td class="font-bold">{{ item.stock }}</td>
+                <td>{{ reservedForItem(item.id) }}</td>
+                <td>{{ availableForItem(item.id, item.stock) }}</td>
+                <td>{{ item.price.toFixed(2) }}</td>
+                <td class="text-right actions-cell">
+                  <button class="btn-icon" @click="editItem(item)" title="Edytuj">
+                    <i class="fa fa-pencil"></i>
+                  </button>
+                  <button class="btn-icon danger" @click="deleteItem(item.id)" title="Usuń">
+                    <i class="fa fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div v-else class="empty-state">
+            <div class="empty-icon"><i class="fa fa-cubes"></i></div>
+            <h3>Brak towarów</h3>
+            <p>Dodaj pierwszy produkt, aby prowadzić magazyn.</p>
+          </div>
         </div>
       </div>
-      <div class="alert-row" v-if="lowStockCount">
-        Uwaga: {{ lowStockCount }} pozycji poniżej stanu minimalnego.
-      </div>
-      <table v-if="filteredInventory.length" class="warehouse-table">
-        <thead>
-          <tr>
-            <th>Nazwa</th>
-            <th>SKU</th>
-            <th>Jednostka</th>
-            <th>Magazyn</th>
-            <th>Lokalizacja</th>
-            <th>Stan</th>
-            <th>Zarezerwowane</th>
-            <th>Dostępne</th>
-            <th>Min.</th>
-            <th>Cena</th>
-            <th>VAT</th>
-            <th>Akcje</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="item in filteredInventory" :key="item.id" :class="{ warning: isBelowMin(item) }">
-            <td>{{ item.name }}</td>
-            <td>{{ item.sku || '-' }}</td>
-            <td>{{ item.unit }}</td>
-            <td>{{ warehouseName(item.warehouseId) }}</td>
-            <td>{{ item.location || '-' }}</td>
-            <td>{{ item.stock }}</td>
-            <td>{{ reservedForItem(item.id) }}</td>
-            <td>{{ availableForItem(item.id, item.stock) }}</td>
-            <td>{{ item.minStock ?? 0 }}</td>
-            <td>{{ item.price.toFixed(2) }}</td>
-            <td>{{ item.vat }}{{ item.vat === 'zw' ? '' : '%' }}</td>
-            <td class="actions">
-              <button class="ghost-btn" @click="editItem(item)">Edytuj</button>
-              <button class="danger-btn" @click="deleteItem(item.id)">Usuń</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <div v-else class="empty-state">
-        <h3>Brak towarów</h3>
-        <p>Dodaj pierwszy produkt, aby prowadzić magazyn.</p>
-      </div>
-    </section>
+    </div>
 
-    <section class="card">
-      <h2>Rezerwacje towaru</h2>
-      <div class="form-grid">
-        <label>
-          Magazyn
-          <select v-model="reservationForm.warehouseId">
-            <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
-              {{ warehouse.name }}
-            </option>
-          </select>
-        </label>
-        <label>
-          Produkt
-          <select v-model="reservationForm.itemId">
-            <option value="">Wybierz produkt</option>
-            <option v-for="item in filteredReservationItems" :key="item.id" :value="item.id">
-              {{ item.name }} ({{ item.stock }} {{ item.unit }})
-            </option>
-          </select>
-        </label>
-        <label>
-          Ilość
-          <input v-model.number="reservationForm.quantity" type="number" min="1" />
-        </label>
-        <label>
-          Kontrahent
-          <select v-model="reservationForm.contactId">
-            <option value="">Brak</option>
-            <option v-for="contact in contacts" :key="contact.id" :value="contact.id">
-              {{ contact.name }}
-            </option>
-          </select>
-        </label>
-        <label>
-          Termin ważności
-          <input v-model="reservationForm.until" type="date" />
-        </label>
-        <label class="full-width">
-          Notatka
-          <input v-model.trim="reservationForm.note" type="text" />
-        </label>
+    <!-- Tab Content: Documents (Movement) -->
+    <div v-if="currentTab === 'documents'" class="tab-content">
+      <div class="card">
+        <h3>Nowy dokument magazynowy</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Typ dokumentu</label>
+            <select v-model="movement.type" class="form-control">
+              <option value="pz">PZ (przyjęcie)</option>
+              <option value="wz">WZ (wydanie)</option>
+              <option value="rw">RW (rozchód wewn.)</option>
+              <option value="mm">MM (przesunięcie)</option>
+              <option value="inw">INW (inwentaryzacja)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Data</label>
+            <input v-model="movement.date" type="date" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Kontrahent</label>
+            <select v-model="movement.contactId" class="form-control">
+              <option value="">Brak</option>
+              <option v-for="contact in contacts" :key="contact.id" :value="contact.id">
+                {{ contact.name }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Magazyn</label>
+            <select v-model="movement.warehouseId" class="form-control">
+              <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
+                {{ warehouse.name }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group" v-if="movement.type === 'mm'">
+            <label class="form-label">Magazyn docelowy</label>
+            <select v-model="movement.toWarehouseId" class="form-control">
+              <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
+                {{ warehouse.name }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Produkt *</label>
+            <select v-model="movement.itemId" class="form-control">
+              <option value="">Wybierz produkt</option>
+              <option v-for="item in filteredByWarehouse" :key="item.id" :value="item.id">
+                {{ item.name }} ({{ item.stock }} {{ item.unit }})
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">{{ movement.type === 'inw' ? 'Stan po inwentaryzacji *' : 'Ilość *' }}</label>
+            <input v-model.number="movement.quantity" type="number" min="0" class="form-control" />
+          </div>
+          <div class="form-group full-width">
+            <label class="form-label">Uwagi</label>
+            <input v-model.trim="movement.note" type="text" class="form-control" />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" @click="createMovement">
+            <i class="fa fa-save"></i> Zapisz dokument
+          </button>
+        </div>
       </div>
-      <button class="primary-btn" @click="saveReservation">Dodaj rezerwację</button>
+    </div>
 
-      <table v-if="reservations.length" class="warehouse-table">
-        <thead>
-          <tr>
-            <th>Produkt</th>
-            <th>Magazyn</th>
-            <th>Ilość</th>
-            <th>Kontrahent</th>
-            <th>Termin</th>
-            <th>Status</th>
-            <th>Akcje</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="reservation in reservations" :key="reservation.id">
-            <td>{{ itemName(reservation.itemId) }}</td>
-            <td>{{ warehouseName(reservation.warehouseId) }}</td>
-            <td>{{ reservation.quantity }}</td>
-            <td>{{ contactName(reservation.contactId) }}</td>
-            <td>{{ reservation.until || '-' }}</td>
-            <td>{{ reservation.status === 'active' ? 'Aktywna' : 'Zrealizowana' }}</td>
-            <td class="actions">
-              <button class="ghost-btn" @click="closeReservation(reservation)">Zamknij</button>
-              <button class="danger-btn" @click="deleteReservation(reservation.id)">Usuń</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section class="card">
-      <h2>Magazyny</h2>
-      <div class="form-grid">
-        <label>
-          Nazwa magazynu
-          <input v-model.trim="warehouseForm.name" type="text" />
-        </label>
-        <label>
-          Kod
-          <input v-model.trim="warehouseForm.code" type="text" />
-        </label>
-        <label>
-          Lokalizacja
-          <input v-model.trim="warehouseForm.location" type="text" />
-        </label>
-      </div>
-      <div class="form-actions">
-        <button class="ghost-btn" @click="resetWarehouseForm">Wyczyść</button>
-        <button class="primary-btn" @click="saveWarehouse">
-          {{ editingWarehouseId ? 'Zapisz' : 'Dodaj magazyn' }}
-        </button>
+    <!-- Tab Content: Reservations -->
+    <div v-if="currentTab === 'reservations'" class="tab-content">
+      <div class="card mb-lg">
+        <h3>Nowa rezerwacja</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Magazyn</label>
+            <select v-model="reservationForm.warehouseId" class="form-control">
+              <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
+                {{ warehouse.name }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Produkt</label>
+            <select v-model="reservationForm.itemId" class="form-control">
+              <option value="">Wybierz produkt</option>
+              <option v-for="item in filteredReservationItems" :key="item.id" :value="item.id">
+                {{ item.name }} ({{ item.stock }} {{ item.unit }})
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ilość</label>
+            <input v-model.number="reservationForm.quantity" type="number" min="1" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Kontrahent</label>
+            <select v-model="reservationForm.contactId" class="form-control">
+              <option value="">Brak</option>
+              <option v-for="contact in contacts" :key="contact.id" :value="contact.id">
+                {{ contact.name }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Termin ważności</label>
+            <input v-model="reservationForm.until" type="date" class="form-control" />
+          </div>
+          <div class="form-group full-width">
+            <label class="form-label">Notatka</label>
+            <input v-model.trim="reservationForm.note" type="text" class="form-control" />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" @click="saveReservation">Dodaj rezerwację</button>
+        </div>
       </div>
 
-      <table v-if="warehouses.length" class="warehouse-table">
-        <thead>
-          <tr>
-            <th>Nazwa</th>
-            <th>Kod</th>
-            <th>Lokalizacja</th>
-            <th>Akcje</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="warehouse in warehouses" :key="warehouse.id">
-            <td>{{ warehouse.name }}</td>
-            <td>{{ warehouse.code || '-' }}</td>
-            <td>{{ warehouse.location || '-' }}</td>
-            <td class="actions">
-              <button class="ghost-btn" @click="editWarehouse(warehouse)">Edytuj</button>
-              <button class="danger-btn" @click="deleteWarehouse(warehouse.id)">Usuń</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-
-    <section class="card">
-      <h2>Partie i daty ważności (FEFO)</h2>
-      <div class="form-grid">
-        <label>
-          Magazyn
-          <select v-model="batchForm.warehouseId">
-            <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
-              {{ warehouse.name }}
-            </option>
-          </select>
-        </label>
-        <label>
-          Produkt
-          <select v-model="batchForm.itemId">
-            <option value="">Wybierz produkt</option>
-            <option v-for="item in batchItems" :key="item.id" :value="item.id">
-              {{ item.name }}
-            </option>
-          </select>
-        </label>
-        <label>
-          Numer partii
-          <input v-model.trim="batchForm.batchNumber" type="text" />
-        </label>
-        <label>
-          Data ważności
-          <input v-model="batchForm.expiryDate" type="date" />
-        </label>
-        <label>
-          Ilość
-          <input v-model.number="batchForm.quantity" type="number" min="1" />
-        </label>
+      <div class="card table-card">
+        <div class="table-responsive">
+          <table v-if="reservations.length" class="table">
+            <thead>
+              <tr>
+                <th>Produkt</th>
+                <th>Magazyn</th>
+                <th>Ilość</th>
+                <th>Kontrahent</th>
+                <th>Termin</th>
+                <th>Status</th>
+                <th class="text-right">Akcje</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="reservation in reservations" :key="reservation.id">
+                <td>{{ itemName(reservation.itemId) }}</td>
+                <td>{{ warehouseName(reservation.warehouseId) }}</td>
+                <td class="font-bold">{{ reservation.quantity }}</td>
+                <td>{{ contactName(reservation.contactId) }}</td>
+                <td>{{ reservation.until || '-' }}</td>
+                <td>
+                  <span class="badge" :class="reservation.status === 'active' ? 'badge-info' : 'badge-secondary'">
+                    {{ reservation.status === 'active' ? 'Aktywna' : 'Zrealizowana' }}
+                  </span>
+                </td>
+                <td class="text-right actions-cell">
+                  <button class="btn btn-sm btn-ghost" @click="closeReservation(reservation)" v-if="reservation.status === 'active'">
+                    Zamknij
+                  </button>
+                  <button class="btn-icon danger" @click="deleteReservation(reservation.id)">
+                    <i class="fa fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div v-else class="empty-state">
+            <p>Brak rezerwacji</p>
+          </div>
+        </div>
       </div>
-      <button class="primary-btn" @click="addBatch">Dodaj partię</button>
+    </div>
 
-      <table v-if="batchTableRows.length" class="warehouse-table">
-        <thead>
-          <tr>
-            <th>Produkt</th>
-            <th>Magazyn</th>
-            <th>Partia</th>
-            <th>Ważna do</th>
-            <th>Ilość</th>
-            <th>Akcje</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="row in batchTableRows" :key="row.id">
-            <td>{{ row.itemName }}</td>
-            <td>{{ warehouseName(row.warehouseId) }}</td>
-            <td>{{ row.batchNumber || '-' }}</td>
-            <td>{{ row.expiryDate || '-' }}</td>
-            <td>{{ row.quantity }}</td>
-            <td class="actions">
-              <button class="danger-btn" @click="removeBatch(row)">Usuń</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
+    <!-- Tab Content: Batches -->
+    <div v-if="currentTab === 'batches'" class="tab-content">
+      <div class="card mb-lg">
+        <h3>Zarządzanie partiami (FEFO)</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Magazyn</label>
+            <select v-model="batchForm.warehouseId" class="form-control">
+              <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
+                {{ warehouse.name }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Produkt</label>
+            <select v-model="batchForm.itemId" class="form-control">
+              <option value="">Wybierz produkt</option>
+              <option v-for="item in batchItems" :key="item.id" :value="item.id">
+                {{ item.name }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Numer partii</label>
+            <input v-model.trim="batchForm.batchNumber" type="text" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Data ważności</label>
+            <input v-model="batchForm.expiryDate" type="date" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Ilość</label>
+            <input v-model.number="batchForm.quantity" type="number" min="1" class="form-control" />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" @click="addBatch">Dodaj partię</button>
+        </div>
+      </div>
+
+      <div class="card table-card">
+        <div class="table-responsive">
+          <table v-if="batchTableRows.length" class="table">
+            <thead>
+              <tr>
+                <th>Produkt</th>
+                <th>Magazyn</th>
+                <th>Partia</th>
+                <th>Ważna do</th>
+                <th>Ilość</th>
+                <th class="text-right">Akcje</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in batchTableRows" :key="row.id">
+                <td>{{ row.itemName }}</td>
+                <td>{{ warehouseName(row.warehouseId) }}</td>
+                <td class="font-mono">{{ row.batchNumber || '-' }}</td>
+                <td>{{ row.expiryDate || '-' }}</td>
+                <td>{{ row.quantity }}</td>
+                <td class="text-right actions-cell">
+                  <button class="btn-icon danger" @click="removeBatch(row)">
+                    <i class="fa fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+           <div v-else class="empty-state">
+            <p>Brak partii magazynowych</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Content: Warehouses -->
+    <div v-if="currentTab === 'warehouses'" class="tab-content">
+      <div class="card mb-lg">
+        <h3>{{ editingWarehouseId ? 'Edytuj magazyn' : 'Nowy magazyn' }}</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">Nazwa magazynu</label>
+            <input v-model.trim="warehouseForm.name" type="text" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Kod</label>
+            <input v-model.trim="warehouseForm.code" type="text" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Lokalizacja</label>
+            <input v-model.trim="warehouseForm.location" type="text" class="form-control" />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-ghost" @click="resetWarehouseForm">Wyczyść</button>
+          <button class="btn btn-primary" @click="saveWarehouse">
+            {{ editingWarehouseId ? 'Zapisz' : 'Dodaj magazyn' }}
+          </button>
+        </div>
+      </div>
+
+      <div class="card table-card">
+        <div class="table-responsive">
+          <table v-if="warehouses.length" class="table">
+            <thead>
+              <tr>
+                <th>Nazwa</th>
+                <th>Kod</th>
+                <th>Lokalizacja</th>
+                <th class="text-right">Akcje</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="warehouse in warehouses" :key="warehouse.id">
+                <td class="font-medium">{{ warehouse.name }}</td>
+                <td class="font-mono">{{ warehouse.code || '-' }}</td>
+                <td>{{ warehouse.location || '-' }}</td>
+                <td class="text-right actions-cell">
+                  <button class="btn-icon" @click="editWarehouse(warehouse)">
+                    <i class="fa fa-pencil"></i>
+                  </button>
+                  <button class="btn-icon danger" @click="deleteWarehouse(warehouse.id)">
+                    <i class="fa fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -403,6 +473,15 @@ const editingId = ref('')
 const fileInput = ref(null)
 const warehouseFilter = ref('')
 const editingWarehouseId = ref('')
+const currentTab = ref('inventory')
+
+const tabs = [
+  { id: 'inventory', label: 'Stany magazynowe', icon: 'fa fa-cubes' },
+  { id: 'documents', label: 'Nowy dokument', icon: 'fa fa-file-text' },
+  { id: 'reservations', label: 'Rezerwacje', icon: 'fa fa-bookmark' },
+  { id: 'batches', label: 'Partie (FEFO)', icon: 'fa fa-barcode' },
+  { id: 'warehouses', label: 'Magazyny', icon: 'fa fa-building' }
+]
 
 const vatRates = computed(() => settings.value.tax.enabledVatRates)
 
@@ -537,6 +616,7 @@ const editItem = (item) => {
   showItemForm.value = true
   editingId.value = item.id
   itemForm.value = { minStock: 0, ...item }
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 const deleteItem = (id) => {
@@ -876,13 +956,217 @@ const createMovement = () => {
      quantity: 1,
      note: ''
    }
- }
 
- const goHome = () => {
-   router.push({ name: 'home' })
+   // Switch to inventory tab to see changes or stay?
+   // Maybe show success message
+   alert('Dokument utworzony pomyślnie.')
  }
 
  onMounted(loadData)
 </script>
 
-<style src="./Warehouse.css"></style>
+<style scoped>
+.page-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.tabs-wrapper {
+  display: flex;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.tab-btn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--secondary-500);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tab-btn:hover {
+  color: var(--primary-600);
+  background: var(--secondary-50);
+}
+
+.tab-btn.active {
+  color: var(--primary-600);
+  border-bottom-color: var(--primary-600);
+  background: var(--primary-50);
+}
+
+.action-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.form-card {
+  animation: slideDown 0.3s ease;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  border-bottom: 1px solid var(--app-border);
+  padding-bottom: var(--spacing-md);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--app-border);
+}
+
+.table-header-filters {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--secondary-50);
+  border-bottom: 1px solid var(--app-border);
+}
+
+.search-wrapper {
+  position: relative;
+  flex: 1;
+  max-width: 300px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--secondary-400);
+}
+
+.with-icon {
+  padding-left: 36px;
+}
+
+.warehouse-select {
+  width: auto;
+  min-width: 200px;
+}
+
+.alert {
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  margin: var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--text-sm);
+}
+
+.alert-warning {
+  background: var(--warning-light);
+  color: var(--warning);
+}
+
+.row-warning td {
+  background-color: var(--warning-light) !important;
+}
+
+.actions-cell {
+  white-space: nowrap;
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--secondary-500);
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.btn-icon:hover {
+  background: var(--secondary-100);
+  color: var(--primary-600);
+}
+
+.btn-icon.danger:hover {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.empty-state {
+  padding: var(--spacing-3xl);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  color: var(--secondary-300);
+  margin-bottom: var(--spacing-sm);
+}
+
+.mb-lg {
+  margin-bottom: var(--spacing-lg);
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .actions-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tabs-wrapper {
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 8px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

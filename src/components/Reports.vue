@@ -1,103 +1,124 @@
 <template>
-  <div class="reports-page">
-    <header class="page-header">
-      <button class="ghost-btn" @click="goHome">Powrót</button>
+  <div class="page-content">
+    <div class="actions-bar">
       <div>
-        <h1>Raporty i eksport</h1>
-        <p>Podsumowanie sprzedaży, VAT oraz eksport CSV.</p>
+        <!-- Title area if needed, but TopBar handles it -->
       </div>
-      <button class="primary-btn" @click="refresh">Odśwież</button>
-    </header>
 
-    <section class="card">
-      <h2>Zakres dat</h2>
+      <div class="action-buttons">
+        <button class="btn btn-secondary" @click="refresh">
+          <i class="fa fa-refresh"></i> Odśwież
+        </button>
+        <button class="btn btn-primary" @click="exportDocuments">
+          <i class="fa fa-download"></i> Eksport CSV
+        </button>
+      </div>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="card mb-lg">
       <div class="form-grid">
-        <label>
-          Od
-          <input v-model="range.from" type="date" />
-        </label>
-        <label>
-          Do
-          <input v-model="range.to" type="date" />
-        </label>
-        <label>
-          Typ dokumentu
-          <select v-model="filterType">
+        <div class="form-group">
+          <label class="form-label">Od daty</label>
+          <input v-model="range.from" type="date" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Do daty</label>
+          <input v-model="range.to" type="date" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Typ dokumentu</label>
+          <select v-model="filterType" class="form-control">
             <option value="all">Wszystkie</option>
             <option v-for="type in salesTypes" :key="type" :value="type">
               {{ typeLabels[type] }}
             </option>
           </select>
-        </label>
-        <label>
-          Waluta
-          <select v-model="filterCurrency">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Waluta</label>
+          <select v-model="filterCurrency" class="form-control">
             <option value="all">Wszystkie</option>
             <option v-for="currency in currencies" :key="currency" :value="currency">
               {{ currency }}
             </option>
           </select>
-        </label>
-      </div>
-    </section>
-
-    <section class="summary-grid">
-      <div class="summary-card">
-        <p>Suma netto</p>
-        <strong>{{ totals.netto }} {{ activeCurrency }}</strong>
-      </div>
-      <div class="summary-card">
-        <p>VAT</p>
-        <strong>{{ totals.vat }} {{ activeCurrency }}</strong>
-      </div>
-      <div class="summary-card">
-        <p>Suma brutto</p>
-        <strong>{{ totals.brutto }} {{ activeCurrency }}</strong>
-      </div>
-    </section>
-
-    <section class="card">
-      <div class="table-header">
-        <h2>Dokumenty w okresie</h2>
-        <div class="actions">
-          <button class="ghost-btn" @click="exportDocuments">Eksport CSV</button>
-          <button v-if="canExportExcel" class="ghost-btn" @click="exportExcel">Eksport Excel</button>
-          <button class="primary-btn" @click="exportVatSummary">Eksport VAT CSV</button>
         </div>
       </div>
+    </div>
 
-      <table v-if="filteredDocuments.length" class="reports-table">
-        <thead>
-          <tr>
-            <th>Numer</th>
-            <th>Typ</th>
-            <th>Kontrahent</th>
-            <th>Data</th>
-            <th>Netto</th>
-            <th>VAT</th>
-            <th>Brutto</th>
-            <th>Waluta</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="doc in filteredDocuments" :key="doc.id">
-            <td>{{ doc.number }}</td>
-            <td>{{ typeLabels[doc.type] }}</td>
-            <td>{{ doc.counterparty?.name || '-' }}</td>
-            <td>{{ formatDate(doc.document?.issueDate) }}</td>
-            <td>{{ getTotals(doc).netto }}</td>
-            <td>{{ getTotals(doc).vat }}</td>
-            <td>{{ getTotals(doc).brutto }}</td>
-            <td>{{ doc.currency }}</td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div v-else class="empty-state">
-        <h3>Brak danych</h3>
-        <p>W wybranym okresie nie ma dokumentów sprzedaży.</p>
+    <!-- Summary Grid -->
+    <div class="summary-grid mb-lg">
+      <div class="stat-card">
+        <div class="stat-icon revenue-bg">
+          <i class="fa fa-money"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Suma Netto</span>
+          <span class="stat-value">{{ formatCurrency(totals.netto, activeCurrency) }}</span>
+        </div>
       </div>
-    </section>
+      <div class="stat-card">
+        <div class="stat-icon vat-bg">
+          <i class="fa fa-percent"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Suma VAT</span>
+          <span class="stat-value">{{ formatCurrency(totals.vat, activeCurrency) }}</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon total-bg">
+          <i class="fa fa-balance-scale"></i>
+        </div>
+        <div class="stat-info">
+          <span class="stat-label">Suma Brutto</span>
+          <span class="stat-value">{{ formatCurrency(totals.brutto, activeCurrency) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Documents Table -->
+    <div class="card table-card">
+      <div class="table-responsive">
+        <table v-if="filteredDocuments.length" class="table">
+          <thead>
+            <tr>
+              <th>Numer</th>
+              <th>Typ</th>
+              <th>Kontrahent</th>
+              <th>Data</th>
+              <th class="text-right">Netto</th>
+              <th class="text-right">VAT</th>
+              <th class="text-right">Brutto</th>
+              <th>Waluta</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="doc in filteredDocuments" :key="doc.id">
+              <td class="font-medium">{{ doc.number }}</td>
+              <td>
+                <span class="badge badge-secondary">{{ typeLabels[doc.type] }}</span>
+              </td>
+              <td>{{ doc.counterparty?.name || '-' }}</td>
+              <td>{{ formatDate(doc.document?.issueDate) }}</td>
+              <td class="text-right">{{ formatNumber(doc.totals?.netto) }}</td>
+              <td class="text-right">{{ formatNumber(doc.totals?.vat) }}</td>
+              <td class="text-right font-bold">{{ formatNumber(doc.totals?.brutto) }}</td>
+              <td>{{ doc.currency }}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div v-else class="empty-state">
+          <div class="empty-icon">
+            <i class="fa fa-bar-chart"></i>
+          </div>
+          <h3>Brak danych</h3>
+          <p>Brak dokumentów sprzedaży w wybranym okresie.</p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -107,7 +128,6 @@ import { useRouter } from 'vue-router'
 import { getDocuments } from '@/services/documents'
 import { getSettings } from '@/services/settings'
 import { exportCsv } from '@/services/csv'
-import { apiUrl, getAuthHeaders, hasBackendConfig } from '@/services/api'
 
 const router = useRouter()
 const settings = ref(getSettings())
@@ -154,9 +174,9 @@ const filteredDocuments = computed(() => {
 const getTotals = (doc) => {
   const totals = doc.totals || {}
   return {
-    netto: totals.netto || '0.00',
-    vat: totals.vat || '0.00',
-    brutto: totals.brutto || '0.00'
+    netto: Number(totals.netto || 0),
+    vat: Number(totals.vat || 0),
+    brutto: Number(totals.brutto || 0)
   }
 }
 
@@ -164,42 +184,24 @@ const totals = computed(() => {
   const sums = filteredDocuments.value.reduce(
     (acc, doc) => {
       const t = getTotals(doc)
-      acc.netto += Number(t.netto)
-      acc.vat += Number(t.vat)
-      acc.brutto += Number(t.brutto)
+      acc.netto += t.netto
+      acc.vat += t.vat
+      acc.brutto += t.brutto
       return acc
     },
     { netto: 0, vat: 0, brutto: 0 }
   )
 
   return {
-    netto: sums.netto.toFixed(2),
-    vat: sums.vat.toFixed(2),
-    brutto: sums.brutto.toFixed(2)
+    netto: sums.netto,
+    vat: sums.vat,
+    brutto: sums.brutto
   }
 })
 
 const activeCurrency = computed(() => (filterCurrency.value === 'all' ? settings.value.tax.defaultCurrency : filterCurrency.value))
-const canExportExcel = computed(() => hasBackendConfig())
 
 const exportDocuments = () => {
-  if (hasBackendConfig()) {
-    const params = new URLSearchParams({
-      from: range.value.from,
-      to: range.value.to
-    })
-    const url = apiUrl(`/reports/export/csv?${params.toString()}`)
-    fetch(url, { headers: getAuthHeaders() })
-      .then((res) => res.blob())
-      .then((blob) => {
-        const link = document.createElement('a')
-        link.href = URL.createObjectURL(blob)
-        link.download = 'raport-dokumenty.csv'
-        link.click()
-        URL.revokeObjectURL(link.href)
-      })
-    return
-  }
   const rows = [
     ['Numer', 'Typ', 'Kontrahent', 'Data', 'Netto', 'VAT', 'Brutto', 'Waluta']
   ]
@@ -211,60 +213,14 @@ const exportDocuments = () => {
       typeLabels[doc.type] || doc.type,
       doc.counterparty?.name || '-',
       formatDate(doc.document?.issueDate),
-      t.netto,
-      t.vat,
-      t.brutto,
+      t.netto.toFixed(2),
+      t.vat.toFixed(2),
+      t.brutto.toFixed(2),
       doc.currency
     ])
   })
 
   exportCsv(rows, 'raport-dokumenty.csv')
-}
-
-const exportExcel = () => {
-  if (!hasBackendConfig()) return
-  const params = new URLSearchParams({
-    from: range.value.from,
-    to: range.value.to
-  })
-  const url = apiUrl(`/reports/export/xlsx?${params.toString()}`)
-  fetch(url, { headers: getAuthHeaders() })
-    .then((res) => res.blob())
-    .then((blob) => {
-      const link = document.createElement('a')
-      link.href = URL.createObjectURL(blob)
-      link.download = 'raport-dokumenty.xlsx'
-      link.click()
-      URL.revokeObjectURL(link.href)
-    })
-}
-
-const exportVatSummary = () => {
-  const rows = [
-    ['Typ', 'Netto', 'VAT', 'Brutto', 'Waluta']
-  ]
-
-  const summary = filteredDocuments.value.reduce((acc, doc) => {
-    const key = `${doc.type}-${doc.currency}`
-    if (!acc[key]) acc[key] = { type: doc.type, currency: doc.currency, netto: 0, vat: 0, brutto: 0 }
-    const t = getTotals(doc)
-    acc[key].netto += Number(t.netto)
-    acc[key].vat += Number(t.vat)
-    acc[key].brutto += Number(t.brutto)
-    return acc
-  }, {})
-
-  Object.values(summary).forEach((row) => {
-    rows.push([
-      typeLabels[row.type] || row.type,
-      row.netto.toFixed(2),
-      row.vat.toFixed(2),
-      row.brutto.toFixed(2),
-      row.currency
-    ])
-  })
-
-  exportCsv(rows, 'raport-vat.csv')
 }
 
 const formatDate = (value) => {
@@ -274,15 +230,123 @@ const formatDate = (value) => {
   return parsed.toLocaleDateString('pl-PL')
 }
 
-const refresh = () => {
-  documents.value = getDocuments()
+const formatNumber = (val) => {
+  return Number(val || 0).toFixed(2)
 }
 
-const goHome = () => {
-  router.push({ name: 'home' })
+const formatCurrency = (val, currency) => {
+  return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: currency || 'PLN' }).format(val || 0)
+}
+
+const refresh = () => {
+  documents.value = getDocuments()
 }
 
 onMounted(refresh)
 </script>
 
-<style src="./Reports.css"></style>
+<style scoped>
+.page-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.action-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.stat-card {
+  background: var(--app-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-xl);
+}
+
+.revenue-bg { background: var(--info-light); color: var(--info); }
+.vat-bg { background: var(--warning-light); color: var(--warning); }
+.total-bg { background: var(--success-light); color: var(--success); }
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: var(--text-sm);
+  color: var(--secondary-500);
+  font-weight: var(--font-medium);
+}
+
+.stat-value {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  color: var(--secondary-900);
+}
+
+.table-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.empty-state {
+  padding: var(--spacing-3xl);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  color: var(--secondary-300);
+  margin-bottom: var(--spacing-sm);
+}
+
+.mb-lg {
+  margin-bottom: var(--spacing-lg);
+}
+
+@media (max-width: 768px) {
+  .actions-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+</style>

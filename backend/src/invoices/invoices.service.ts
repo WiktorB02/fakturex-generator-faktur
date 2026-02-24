@@ -3,7 +3,6 @@ import { PrismaService } from '../prisma/prisma.service'
 import { CreateInvoiceDto } from './dto/create-invoice.dto'
 import { CreateCorrectionDto } from './dto/create-correction.dto'
 import { NumberingService } from '../numbering/numbering.service'
-import { InvoiceType } from '../common/enums'
 
 const calcTotals = (type: string, items: CreateInvoiceDto['items']) => {
   let totalNet = 0
@@ -15,7 +14,7 @@ const calcTotals = (type: string, items: CreateInvoiceDto['items']) => {
     const qty = Number(item.quantity)
     const priceNet = Number(item.priceNet)
     const net = qty * priceNet * (1 - discount / 100)
-    const vatRate = type === InvoiceType.NO_VAT ? 0 : Number(item.vatRate)
+    const vatRate = type === 'NO_VAT' ? 0 : Number(item.vatRate)
     const vat = net * (vatRate / 100)
     const gross = net + vat
     totalNet += net
@@ -71,7 +70,7 @@ export class InvoicesService {
   }
 
   createAdvance(companyId: string, dto: CreateInvoiceDto) {
-    return this.create(companyId, { ...dto, type: InvoiceType.ADVANCE })
+    return this.create(companyId, { ...dto, type: 'ADVANCE' })
   }
 
   async duplicate(companyId: string, id: string, number: string) {
@@ -131,13 +130,13 @@ export class InvoicesService {
           quantity: Number(item.quantity) * -1
         }))
 
-    const { items: normalizedItems, totals } = calcTotals(InvoiceType.CORRECTION, items as any)
+    const { items: normalizedItems, totals } = calcTotals('CORRECTION', items as any)
 
     return this.prisma.invoice.create({
       data: {
         companyId,
         clientId: original.clientId,
-        type: InvoiceType.CORRECTION,
+        type: 'CORRECTION',
         number: dto.number,
         issueDate: new Date(dto.issueDate),
         saleDate: new Date(dto.saleDate),

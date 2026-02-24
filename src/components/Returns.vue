@@ -1,90 +1,115 @@
 <template>
-  <div class="orders-page">
-    <header class="page-header">
-      <button class="ghost-btn" @click="goHome">Powrót</button>
+  <div class="page-content">
+    <div class="actions-bar">
       <div>
-        <h1>Zwroty i reklamacje</h1>
-        <p>Rejestr zwrotów, reklamacji i przyjęć na magazyn.</p>
+        <!-- Title handled by TopBar -->
       </div>
-      <button class="primary-btn" @click="toggleForm">
-        {{ showForm ? 'Zamknij' : 'Nowy zwrot' }}
-      </button>
-    </header>
 
-    <section v-if="showForm" class="card">
-      <h2>Nowy zwrot</h2>
+      <div class="action-buttons">
+        <button class="btn btn-primary" @click="toggleForm">
+          <i class="fa fa-plus"></i> Nowy zwrot
+        </button>
+      </div>
+    </div>
+
+    <!-- Return Form -->
+    <div v-if="showForm" class="card form-card mb-lg">
+      <div class="card-header">
+        <h3>Nowy zwrot / reklamacja</h3>
+        <button class="btn-icon" @click="toggleForm">
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+
       <div class="form-grid">
-        <label>
-          Dokument źródłowy
-          <select v-model="form.documentId">
+        <div class="form-group">
+          <label class="form-label">Dokument źródłowy</label>
+          <select v-model="form.documentId" class="form-control">
             <option value="">Wybierz dokument</option>
             <option v-for="doc in salesDocs" :key="doc.id" :value="doc.id">
-              {{ doc.number }}
+              {{ doc.number }} ({{ doc.counterparty?.name || '-' }})
             </option>
           </select>
-        </label>
-        <label>
-          Magazyn
-          <select v-model="form.warehouseId">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Magazyn</label>
+          <select v-model="form.warehouseId" class="form-control">
             <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
               {{ warehouse.name }}
             </option>
           </select>
-        </label>
-        <label>
-          Produkt
-          <select v-model="form.itemId">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Produkt</label>
+          <select v-model="form.itemId" class="form-control">
             <option value="">Wybierz produkt</option>
             <option v-for="item in inventory" :key="item.id" :value="item.id">
               {{ item.name }}
             </option>
           </select>
-        </label>
-        <label>
-          Ilość
-          <input v-model.number="form.quantity" type="number" min="1" />
-        </label>
-        <label>
-          Przywrócić na magazyn
-          <select v-model="form.returnToStock">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ilość</label>
+          <input v-model.number="form.quantity" type="number" min="1" class="form-control" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Przywrócić na magazyn?</label>
+          <select v-model="form.returnToStock" class="form-control">
             <option :value="true">Tak</option>
             <option :value="false">Nie</option>
           </select>
-        </label>
+        </div>
       </div>
-      <button class="primary-btn" @click="saveReturn">Zapisz zwrot</button>
-    </section>
 
-    <section class="card">
-      <h2>Lista zwrotów</h2>
-      <table v-if="returnsList.length" class="orders-table">
-        <thead>
-          <tr>
-            <th>Dokument</th>
-            <th>Produkt</th>
-            <th>Ilość</th>
-            <th>Status</th>
-            <th>Akcje</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="entry in returnsList" :key="entry.id">
-            <td>{{ docNumber(entry.documentId) }}</td>
-            <td>{{ itemName(entry.itemId) }}</td>
-            <td>{{ entry.quantity }}</td>
-            <td>{{ entry.status === 'open' ? 'Otwarte' : 'Zamknięte' }}</td>
-            <td class="actions">
-              <button class="ghost-btn" @click="closeReturn(entry)">Zamknij</button>
-              <button class="danger-btn" @click="deleteReturn(entry.id)">Usuń</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <div v-else class="empty-state">
-        <h3>Brak zwrotów</h3>
-        <p>Dodaj pierwszy zwrot.</p>
+      <div class="form-actions">
+        <button class="btn btn-ghost" @click="toggleForm">Anuluj</button>
+        <button class="btn btn-primary" @click="saveReturn">
+          <i class="fa fa-save"></i> Zapisz zwrot
+        </button>
       </div>
-    </section>
+    </div>
+
+    <!-- Returns List -->
+    <div class="card table-card">
+      <div class="table-responsive">
+        <table v-if="returnsList.length" class="table">
+          <thead>
+            <tr>
+              <th>Dokument źródłowy</th>
+              <th>Produkt</th>
+              <th>Ilość</th>
+              <th>Status</th>
+              <th class="text-right">Akcje</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="entry in returnsList" :key="entry.id">
+              <td class="font-medium">{{ docNumber(entry.documentId) }}</td>
+              <td>{{ itemName(entry.itemId) }}</td>
+              <td>{{ entry.quantity }}</td>
+              <td>
+                <span class="badge" :class="entry.status === 'open' ? 'badge-warning' : 'badge-secondary'">
+                  {{ entry.status === 'open' ? 'Otwarte' : 'Zamknięte' }}
+                </span>
+              </td>
+              <td class="text-right actions-cell">
+                <button class="btn btn-sm btn-secondary mr-sm" @click="closeReturn(entry)" v-if="entry.status === 'open'">
+                  Zamknij
+                </button>
+                <button class="btn-icon danger" @click="deleteReturn(entry.id)">
+                  <i class="fa fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-else class="empty-state">
+          <div class="empty-icon"><i class="fa fa-rotate-left"></i></div>
+          <h3>Brak zwrotów</h3>
+          <p>Dodaj pierwszy zwrot lub reklamację.</p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -129,7 +154,11 @@ const toggleForm = () => {
 }
 
 const saveReturn = () => {
-  if (!form.value.itemId || !form.value.quantity) return
+  if (!form.value.itemId || !form.value.quantity) {
+    alert('Wybierz produkt i ilość.')
+    return
+  }
+
   returnsList.value = addReturn({ ...form.value })
 
   const rmaNumber = commitNumber('rma', new Date(), settings)
@@ -186,6 +215,7 @@ const saveReturn = () => {
     quantity: 1,
     returnToStock: true
   }
+  showForm.value = false
 }
 
 const closeReturn = (entry) => {
@@ -193,17 +223,122 @@ const closeReturn = (entry) => {
 }
 
 const deleteReturn = (id) => {
-  returnsList.value = removeReturn(id)
+  if (confirm('Czy na pewno usunąć ten zwrot?')) {
+    returnsList.value = removeReturn(id)
+  }
 }
 
 const docNumber = (id) => salesDocs.value.find((doc) => doc.id === id)?.number || '-'
 const itemName = (id) => inventory.value.find((item) => item.id === id)?.name || '-'
 
-const goHome = () => {
-  router.push({ name: 'home' })
-}
-
 onMounted(loadData)
 </script>
 
-<style src="./Orders.css"></style>
+<style scoped>
+.page-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.action-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.form-card {
+  animation: slideDown 0.3s ease;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  border-bottom: 1px solid var(--app-border);
+  padding-bottom: var(--spacing-md);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--app-border);
+}
+
+.table-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.actions-cell {
+  white-space: nowrap;
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--secondary-500);
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.btn-icon:hover {
+  background: var(--secondary-100);
+  color: var(--primary-600);
+}
+
+.btn-icon.danger:hover {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.mr-sm {
+  margin-right: var(--spacing-sm);
+}
+
+.empty-state {
+  padding: var(--spacing-3xl);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  color: var(--secondary-300);
+  margin-bottom: var(--spacing-sm);
+}
+
+.mb-lg {
+  margin-bottom: var(--spacing-lg);
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>

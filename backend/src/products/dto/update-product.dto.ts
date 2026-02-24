@@ -1,5 +1,5 @@
 import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator'
-import { Unit } from '../../common/enums'
+import { Unit } from '@prisma/client'
 
 export class UpdateProductDto {
   @IsOptional()

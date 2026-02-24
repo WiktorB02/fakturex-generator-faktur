@@ -4,7 +4,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { CompanyGuard } from '../common/guards/company.guard'
 import { CompanyId } from '../common/decorators/company-id.decorator'
 import { UpdatePatternDto } from './dto/update-pattern.dto'
-import { InvoiceType } from '../common/enums'
+import { InvoiceType } from '@prisma/client'
 
 @Controller('numbering')
 @UseGuards(JwtAuthGuard, CompanyGuard)

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { InvoiceType, ResetPeriod } from '../common/enums'
+import { InvoiceType, ResetPeriod } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 
 const defaultPatterns: Record<InvoiceType, { pattern: string; reset: ResetPeriod; padding: number }> = {
@@ -18,14 +18,14 @@ export class NumberingService {
 
   async getPatterns(companyId: string) {
     const existing = await this.prisma.numberingPattern.findMany({ where: { companyId } })
-    const map = new Map(existing.map((p) => [p.type as InvoiceType, p]))
+    const map = new Map(existing.map((p) => [p.type, p]))
     return (Object.keys(defaultPatterns) as InvoiceType[]).map((type) => {
       const fallback = defaultPatterns[type]
       const saved = map.get(type)
       return {
         type,
         pattern: saved?.pattern ?? fallback.pattern,
-        reset: (saved?.reset as ResetPeriod) ?? fallback.reset,
+        reset: saved?.reset ?? fallback.reset,
         padding: saved?.padding ?? fallback.padding
       }
     })
@@ -55,12 +55,7 @@ export class NumberingService {
     const saved = await this.prisma.numberingPattern.findUnique({
       where: { companyId_type: { companyId, type } }
     })
-    if (!saved) return defaultPatterns[type]
-    return {
-      pattern: saved.pattern,
-      reset: saved.reset as ResetPeriod,
-      padding: saved.padding
-    }
+    return saved ?? defaultPatterns[type]
   }
 
   private format(pattern: string, date: Date, seq: number, padding: number) {

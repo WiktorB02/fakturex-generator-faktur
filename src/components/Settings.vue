@@ -1,531 +1,328 @@
 <template>
-  <div id="top" class="settings-page">
-    <header class="settings-header">
-      <button class="ghost-btn" @click="goHome">Powrót</button>
+  <div class="settings-page">
+    <div class="actions-bar">
       <div>
-        <h1>Ustawienia</h1>
-        <p>Konfiguracja firmy, numeracji dokumentów i szablonów.</p>
+        <!-- Title handled by TopBar -->
       </div>
-      <button class="primary-btn" @click="saveSettings">Zapisz ustawienia</button>
-    </header>
+
+      <div class="action-buttons">
+        <button class="btn btn-primary" @click="saveSettings">
+          <i class="fa fa-save"></i> Zapisz ustawienia
+        </button>
+      </div>
+    </div>
 
     <div class="settings-layout">
-      <aside class="settings-sidebar">
-        <h3>Panel ustawień</h3>
+      <!-- Settings Navigation -->
+      <aside class="settings-nav card">
+        <h3>Kategorie</h3>
         <nav>
           <button
-            class="sidebar-link"
-            :class="{ active: activeSection === 'company' }"
-            @click="selectSection('company')"
+            v-for="section in sections"
+            :key="section.id"
+            class="nav-link"
+            :class="{ active: activeSection === section.id }"
+            @click="activeSection = section.id"
           >
-            Ustawienia firmy
-          </button>
-          <button
-            class="sidebar-link"
-            :class="{ active: activeSection === 'branding' }"
-            @click="selectSection('branding')"
-          >
-            Branding i szablon
-          </button>
-          <button
-            class="sidebar-link"
-            :class="{ active: activeSection === 'discounts' }"
-            @click="selectSection('discounts')"
-          >
-            Rabaty i kupony
-          </button>
-          <button
-            class="sidebar-link"
-            :class="{ active: activeSection === 'numbering' }"
-            @click="selectSection('numbering')"
-          >
-            Numeracja dokumentów
-          </button>
-          <button
-            class="sidebar-link"
-            :class="{ active: activeSection === 'personalization' }"
-            @click="selectSection('personalization')"
-          >
-            Punkt personalizacji
-          </button>
-          <button
-            class="sidebar-link"
-            :class="{ active: activeSection === 'performance' }"
-            @click="selectSection('performance')"
-          >
-            Punkt wydajności
-          </button>
-          <button
-            class="sidebar-link"
-            :class="{ active: activeSection === 'mobile' }"
-            @click="selectSection('mobile')"
-          >
-            Mobilne UX
-          </button>
-          <button
-            class="sidebar-link"
-            :class="{ active: activeSection === 'tax' }"
-            @click="selectSection('tax')"
-          >
-            Stawki VAT i waluty
-          </button>
-          <button
-            class="sidebar-link"
-            :class="{ active: activeSection === 'payments' }"
-            @click="selectSection('payments')"
-          >
-            Płatności i bank
-          </button>
-          <button
-            class="sidebar-link"
-            :class="{ active: activeSection === 'permissions' }"
-            @click="selectSection('permissions')"
-          >
-            Ustawienia uprawnień
-          </button>
-          <button
-            class="sidebar-link"
-            :class="{ active: activeSection === 'users' }"
-            @click="selectSection('users')"
-          >
-            Użytkownicy i role
+            <i :class="section.icon"></i>
+            {{ section.label }}
           </button>
         </nav>
       </aside>
 
-      <div class="settings-grid">
-      <div v-if="!activeSection" class="card empty-state">
-        <h2>Wybierz kategorię ustawień</h2>
-        <p>Po lewej stronie kliknij interesującą sekcję, aby rozpocząć konfigurację.</p>
-      </div>
-
-      <section v-if="activeSection === 'company'" id="company" class="card">
-        <h2>Dane firmy</h2>
-        <div class="form-grid">
-          <label>
-            Nazwa firmy
-            <input v-model.trim="settings.company.name" type="text" />
-          </label>
-          <label>
-            NIP
-            <input v-model.trim="settings.company.nip" type="text" />
-          </label>
-          <label>
-            REGON
-            <input v-model.trim="settings.company.regon" type="text" />
-          </label>
-          <label>
-            Ulica i numer
-            <input v-model.trim="settings.company.address" type="text" />
-          </label>
-          <label>
-            Kod pocztowy
-            <input v-model.trim="settings.company.postalCode" type="text" />
-          </label>
-          <label>
-            Miasto
-            <input v-model.trim="settings.company.city" type="text" />
-          </label>
-          <label>
-            Kraj
-            <input v-model.trim="settings.company.country" type="text" />
-          </label>
-          <label>
-            Telefon
-            <input v-model.trim="settings.company.phone" type="text" />
-          </label>
-          <label>
-            E-mail
-            <input v-model.trim="settings.company.email" type="email" />
-          </label>
-          <label>
-            Strona WWW
-            <input v-model.trim="settings.company.website" type="text" />
-          </label>
-        </div>
-      </section>
-
-      <section v-if="activeSection === 'branding'" id="branding" class="card">
-        <h2>Branding i szablon</h2>
-        <div class="form-grid">
-          <label class="file-label">
-            Logo firmy
-            <input type="file" @change="handleLogoUpload" accept="image/png, image/jpeg" />
-          </label>
-          <label>
-            Kolor akcentu
-            <input v-model="settings.template.accentColor" type="color" />
-          </label>
-          <label class="full-width">
-            Stopka dokumentu
-            <textarea v-model.trim="settings.template.footerNote" rows="3"></textarea>
-          </label>
-          <label class="checkbox-row full-width">
-            <input v-model="settings.template.showPaymentInfo" type="checkbox" />
-            Pokazuj informacje o płatności na dokumentach
-          </label>
-          <label>
-            Układ szablonu
-            <select v-model="settings.template.layout">
-              <option value="classic">Klasyczny</option>
-              <option value="compact">Kompaktowy</option>
-              <option value="minimal">Minimalny</option>
-            </select>
-          </label>
-          <label>
-            Język dokumentów
-            <select v-model="settings.template.language">
-              <option value="pl">Polski</option>
-              <option value="en">English</option>
-            </select>
-          </label>
-          <label class="full-width">
-            Warunki sprzedaży
-            <textarea v-model.trim="settings.template.terms" rows="3"></textarea>
-          </label>
-        </div>
-        <div class="logo-preview" v-if="settings.template.logo">
-          <img :src="settings.template.logo" alt="Logo firmy" />
-        </div>
-        <div class="template-preview" :style="{ '--accent': settings.template.accentColor }">
-          <div class="preview-header">
-            <span>Faktura VAT</span>
-            <span>#FV/01/2026</span>
-          </div>
-          <div class="preview-body">
-            <div>
-              <strong>{{ settings.company.name || 'Twoja firma' }}</strong>
-              <p>{{ settings.company.address || 'Adres firmy' }}</p>
-            </div>
-            <div class="preview-accent">Suma: 1 234,00 {{ settings.tax.defaultCurrency }}</div>
-          </div>
-        </div>
-      </section>
-
-      <section v-if="activeSection === 'discounts'" id="discounts" class="card">
-        <h2>Rabaty i kupony</h2>
-        <div class="form-grid">
-          <label>
-            Rabat globalny (%)
-            <input v-model.number="settings.discounts.globalPercent" type="number" min="0" max="100" />
-          </label>
-        </div>
-        <div class="full-width">
-          <p class="sub-label">Rabaty progowe</p>
-          <div class="chip-grid">
-            <div v-for="(rule, index) in settings.discounts.thresholds" :key="index" class="chip">
-              od {{ rule.minNetto }} PLN → {{ rule.percent }}%
-              <button class="chip-remove" @click="removeThreshold(index)">×</button>
-            </div>
+      <!-- Settings Content -->
+      <div class="settings-content">
+        <!-- Company -->
+        <section v-if="activeSection === 'company'" class="card">
+          <div class="card-header">
+            <h3>Dane firmy</h3>
           </div>
           <div class="form-grid">
-            <label>
-              Próg netto
-              <input v-model.number="thresholdForm.minNetto" type="number" min="0" />
-            </label>
-            <label>
-              Rabat (%)
-              <input v-model.number="thresholdForm.percent" type="number" min="0" max="100" />
-            </label>
-          </div>
-          <button class="ghost-btn" @click="addThreshold">Dodaj próg</button>
-        </div>
-
-        <div class="full-width">
-          <p class="sub-label">Kupony</p>
-          <div class="chip-grid">
-            <div v-for="(coupon, index) in settings.discounts.coupons" :key="index" class="chip">
-              {{ coupon.code }} → {{ coupon.percent }}%
-              <button class="chip-remove" @click="removeCoupon(index)">×</button>
+            <div class="form-group">
+              <label class="form-label">Nazwa firmy</label>
+              <input v-model.trim="settings.company.name" type="text" class="form-control" />
             </div>
+            <div class="form-group">
+              <label class="form-label">NIP</label>
+              <input v-model.trim="settings.company.nip" type="text" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">REGON</label>
+              <input v-model.trim="settings.company.regon" type="text" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Ulica i numer</label>
+              <input v-model.trim="settings.company.address" type="text" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Kod pocztowy</label>
+              <input v-model.trim="settings.company.postalCode" type="text" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Miasto</label>
+              <input v-model.trim="settings.company.city" type="text" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Kraj</label>
+              <input v-model.trim="settings.company.country" type="text" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Telefon</label>
+              <input v-model.trim="settings.company.phone" type="text" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">E-mail</label>
+              <input v-model.trim="settings.company.email" type="email" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Strona WWW</label>
+              <input v-model.trim="settings.company.website" type="text" class="form-control" />
+            </div>
+          </div>
+        </section>
+
+        <!-- Branding -->
+        <section v-if="activeSection === 'branding'" class="card">
+          <div class="card-header">
+            <h3>Branding i szablon</h3>
           </div>
           <div class="form-grid">
-            <label>
-              Kod kuponu
-              <input v-model.trim="couponForm.code" type="text" />
-            </label>
-            <label>
-              Rabat (%)
-              <input v-model.number="couponForm.percent" type="number" min="0" max="100" />
-            </label>
-          </div>
-          <button class="ghost-btn" @click="addCoupon">Dodaj kupon</button>
-        </div>
-      </section>
-
-      <section v-if="activeSection === 'numbering'" id="numbering" class="card compact-card">
-        <h2>Numeracja dokumentów</h2>
-        <div class="form-grid dense-grid">
-          <label>
-            Start numeracji
-            <input v-model.number="settings.numbering.startNumber" type="number" min="1" />
-          </label>
-          <label class="checkbox-row">
-            <input v-model="settings.numbering.resetYearly" type="checkbox" />
-            Resetuj co rok
-          </label>
-          <label>
-            Prefiks faktury VAT
-            <input v-model.trim="settings.numbering.invoicePrefix" type="text" />
-          </label>
-          <label>
-            Prefiks proformy
-            <input v-model.trim="settings.numbering.proformaPrefix" type="text" />
-          </label>
-          <label>
-            Prefiks zaliczkowej
-            <input v-model.trim="settings.numbering.advancePrefix" type="text" />
-          </label>
-          <label>
-            Prefiks końcowej
-            <input v-model.trim="settings.numbering.finalPrefix" type="text" />
-          </label>
-          <label>
-            Prefiks korekty
-            <input v-model.trim="settings.numbering.correctionPrefix" type="text" />
-          </label>
-          <label>
-            Prefiks paragonu
-            <input v-model.trim="settings.numbering.receiptPrefix" type="text" />
-          </label>
-          <label>
-            Prefiks PZ (przyjęcie zewn.)
-            <input v-model.trim="settings.numbering.pzPrefix" type="text" />
-          </label>
-          <label>
-            Prefiks WZ (wydanie zewn.)
-            <input v-model.trim="settings.numbering.wzPrefix" type="text" />
-          </label>
-          <label>
-            Prefiks RW (rozchód wewn.)
-            <input v-model.trim="settings.numbering.rwPrefix" type="text" />
-          </label>
-          <label>
-            Prefiks MM (przesunięcie)
-            <input v-model.trim="settings.numbering.mmPrefix" type="text" />
-          </label>
-          <label>
-            Prefiks INW (inwentaryzacja)
-            <input v-model.trim="settings.numbering.inwPrefix" type="text" />
-          </label>
-          <label>
-            Prefiks SO (zam. sprzedaży)
-            <input v-model.trim="settings.numbering.soPrefix" type="text" />
-          </label>
-          <label>
-            Prefiks PO (zam. zakupu)
-            <input v-model.trim="settings.numbering.poPrefix" type="text" />
-          </label>
-          <label>
-            Prefiks RMA (zwrot)
-            <input v-model.trim="settings.numbering.rmaPrefix" type="text" />
-          </label>
-          <label>
-            Prefiks wydatków
-            <input v-model.trim="settings.numbering.expensePrefix" type="text" />
-          </label>
-        </div>
-      </section>
-
-      <section v-if="activeSection === 'personalization'" id="personalization" class="card">
-        <h2>Punkt personalizacji</h2>
-        <div class="form-grid">
-          <label>
-            Motyw
-            <select v-model="settings.ui.theme">
-              <option value="light">Jasny</option>
-              <option value="dark">Ciemny</option>
-            </select>
-          </label>
-          <label>
-            Gęstość interfejsu
-            <select v-model="settings.ui.density">
-              <option value="comfortable">Komfortowa</option>
-              <option value="compact">Kompaktowa</option>
-            </select>
-          </label>
-          <label class="checkbox-row">
-            <input v-model="settings.ui.roundedCards" type="checkbox" />
-            Zaokrąglone kafelki
-          </label>
-          <label class="checkbox-row">
-            <input v-model="settings.ui.highContrast" type="checkbox" />
-            Wysoki kontrast
-          </label>
-        </div>
-      </section>
-
-      <section v-if="activeSection === 'performance'" id="performance" class="card">
-        <h2>Punkt wydajności</h2>
-        <div class="form-grid">
-          <label class="checkbox-row">
-            <input v-model="settings.performance.reduceAnimations" type="checkbox" />
-            Ogranicz animacje
-          </label>
-          <label class="checkbox-row">
-            <input v-model="settings.performance.lowDataMode" type="checkbox" />
-            Tryb oszczędzania danych
-          </label>
-          <label class="checkbox-row">
-            <input v-model="settings.performance.enableCache" type="checkbox" />
-            Buforuj dane lokalnie
-          </label>
-        </div>
-      </section>
-
-      <section v-if="activeSection === 'mobile'" id="mobile" class="card">
-        <h2>Mobilne UX</h2>
-        <div class="form-grid">
-          <label class="checkbox-row">
-            <input v-model="settings.mobileUx.enableMobileMode" type="checkbox" />
-            Włącz tryb mobilny
-          </label>
-          <label class="checkbox-row">
-            <input v-model="settings.mobileUx.largeTouchTargets" type="checkbox" />
-            Duże obszary dotyku
-          </label>
-          <label class="checkbox-row">
-            <input v-model="settings.mobileUx.stickyActions" type="checkbox" />
-            Przyklejone akcje na dole
-          </label>
-        </div>
-      </section>
-
-      <section v-if="activeSection === 'tax'" id="tax" class="card">
-        <h2>Stawki VAT i waluty</h2>
-        <div class="form-grid">
-          <label>
-            Domyślna stawka VAT
-            <select v-model="settings.tax.defaultVat">
-              <option v-for="rate in vatOptions" :key="rate.value" :value="rate.value">
-                {{ rate.label }}
-              </option>
-            </select>
-          </label>
-          <label>
-            Domyślna waluta
-            <select v-model="settings.tax.defaultCurrency">
-              <option v-for="currency in currencyOptions" :key="currency" :value="currency">
-                {{ currency }}
-              </option>
-            </select>
-          </label>
-          <div class="full-width">
-            <p class="sub-label">Dostępne stawki VAT</p>
-            <div class="chip-grid">
-              <label v-for="rate in vatOptions" :key="rate.value" class="chip">
-                <input
-                  v-model="settings.tax.enabledVatRates"
-                  type="checkbox"
-                  :value="rate.value"
-                />
-                {{ rate.label }}
+            <div class="form-group">
+              <label class="form-label">Logo firmy</label>
+              <input type="file" @change="handleLogoUpload" accept="image/png, image/jpeg" class="form-control" />
+              <div v-if="settings.template.logo" class="logo-preview mt-sm">
+                <img :src="settings.template.logo" alt="Logo" class="preview-img" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Kolor akcentu</label>
+              <div class="color-picker-wrapper">
+                <input v-model="settings.template.accentColor" type="color" class="color-input" />
+                <span class="color-value">{{ settings.template.accentColor }}</span>
+              </div>
+            </div>
+            <div class="form-group full-width">
+              <label class="form-label">Stopka dokumentu</label>
+              <textarea v-model.trim="settings.template.footerNote" rows="3" class="form-control"></textarea>
+            </div>
+            <div class="form-group full-width">
+              <label class="checkbox-label">
+                <input v-model="settings.template.showPaymentInfo" type="checkbox" />
+                Pokazuj informacje o płatności na dokumentach
               </label>
             </div>
-          </div>
-          <div class="full-width">
-            <p class="sub-label">Dostępne waluty</p>
-            <div class="chip-grid">
-              <label v-for="currency in currencyOptions" :key="currency" class="chip">
-                <input
-                  v-model="settings.tax.enabledCurrencies"
-                  type="checkbox"
-                  :value="currency"
-                />
-                {{ currency }}
-              </label>
+            <div class="form-group">
+              <label class="form-label">Język dokumentów</label>
+              <select v-model="settings.template.language" class="form-control">
+                <option value="pl">Polski</option>
+                <option value="en">English</option>
+              </select>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section v-if="activeSection === 'payments'" id="payments" class="card">
-        <h2>Płatności i bank</h2>
-        <div class="form-grid">
-          <label>
-            Nazwa banku
-            <input v-model.trim="settings.payment.bankName" type="text" />
-          </label>
-          <label>
-            Numer rachunku (IBAN)
-            <input v-model.trim="settings.payment.bankAccount" type="text" />
-          </label>
-          <label>
-            Termin płatności (dni)
-            <input v-model.number="settings.payment.paymentDays" type="number" min="0" />
-          </label>
-          <label>
-            Sposób płatności
-            <select v-model="settings.payment.paymentMethod">
-              <option>Przelew</option>
-              <option>Gotówka</option>
-              <option>Karta</option>
-              <option>Online</option>
-            </select>
-          </label>
-        </div>
-      </section>
+        <!-- Discounts -->
+        <section v-if="activeSection === 'discounts'" class="card">
+          <div class="card-header">
+            <h3>Rabaty i kupony</h3>
+          </div>
+          <div class="form-group mb-lg">
+            <label class="form-label">Rabat globalny (%)</label>
+            <input v-model.number="settings.discounts.globalPercent" type="number" min="0" max="100" class="form-control w-32" />
+          </div>
 
-      <section v-if="activeSection === 'permissions'" id="permissions" class="card compact-card">
-        <h2>Role i uprawnienia</h2>
-        <p class="sub-label">Przypisz uprawnienia per rola — zobaczysz też, kto ma daną rolę.</p>
-        <div class="permissions-grid">
-          <article v-for="role in roles" :key="role" class="permission-card">
-            <header>
-              <h3>{{ roleLabel(role) }}</h3>
-              <p class="muted">Użytkownicy: {{ usersByRole[role]?.length || 0 }}</p>
-            </header>
-            <div class="role-users" v-if="usersByRole[role]?.length">
-              <span v-for="userItem in usersByRole[role]" :key="userItem.email" class="chip">
-                {{ userItem.name || userItem.email }}
+          <div class="mb-lg">
+            <h4>Rabaty progowe</h4>
+            <div class="chip-list mb-sm">
+              <span v-for="(rule, index) in settings.discounts.thresholds" :key="index" class="chip">
+                od {{ rule.minNetto }} PLN → {{ rule.percent }}%
+                <button class="chip-remove" @click="removeThreshold(index)">&times;</button>
               </span>
             </div>
-            <div class="permissions-list">
-              <label v-for="perm in permissionList" :key="perm.key" class="perm-item">
-                <input v-model="settings.permissions[role][perm.key]" type="checkbox" />
-                <span>{{ perm.label }}</span>
+            <div class="inline-form">
+              <input v-model.number="thresholdForm.minNetto" type="number" min="0" placeholder="Próg netto" class="form-control" />
+              <input v-model.number="thresholdForm.percent" type="number" min="0" max="100" placeholder="Rabat %" class="form-control" />
+              <button class="btn btn-secondary" @click="addThreshold">Dodaj</button>
+            </div>
+          </div>
+
+          <div>
+            <h4>Kupony</h4>
+            <div class="chip-list mb-sm">
+              <span v-for="(coupon, index) in settings.discounts.coupons" :key="index" class="chip">
+                {{ coupon.code }} → {{ coupon.percent }}%
+                <button class="chip-remove" @click="removeCoupon(index)">&times;</button>
+              </span>
+            </div>
+            <div class="inline-form">
+              <input v-model.trim="couponForm.code" type="text" placeholder="Kod kuponu" class="form-control" />
+              <input v-model.number="couponForm.percent" type="number" min="0" max="100" placeholder="Rabat %" class="form-control" />
+              <button class="btn btn-secondary" @click="addCoupon">Dodaj</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Numbering -->
+        <section v-if="activeSection === 'numbering'" class="card">
+          <div class="card-header">
+            <h3>Numeracja dokumentów</h3>
+          </div>
+          <div class="form-grid dense">
+            <div class="form-group">
+              <label class="form-label">Start numeracji</label>
+              <input v-model.number="settings.numbering.startNumber" type="number" min="1" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label mt-md">
+                <input v-model="settings.numbering.resetYearly" type="checkbox" />
+                Resetuj co rok
               </label>
             </div>
-          </article>
-        </div>
-      </section>
-
-      <section v-if="activeSection === 'users'" id="users" class="card compact-card">
-        <h2>Użytkownicy i role</h2>
-        <p class="sub-label">Przypisania ról dla kont użytkowników.</p>
-        <div class="users-list">
-          <article v-for="userItem in users" :key="userItem.email" class="user-card">
-            <div class="user-meta">
-              <div class="user-line user-name">{{ userItem.name }}</div>
-              <div class="user-line user-role">Rola: {{ roleLabel(userItem.role) }}</div>
-              <div class="user-line user-email">Email: {{ userItem.email }}</div>
+            <div class="form-group" v-for="(label, key) in numberingLabels" :key="key">
+              <label class="form-label">{{ label }}</label>
+              <input v-model.trim="settings.numbering[key]" type="text" class="form-control" />
             </div>
-            <select
-              class="role-select"
-              :value="userItem.role"
-              @change="onUserRoleChange(userItem.email, $event.target.value)"
-            >
-              <option v-for="role in roles" :key="role" :value="role">
-                {{ roleLabel(role) }}
-              </option>
-            </select>
-          </article>
-        </div>
-      </section>
+          </div>
+        </section>
+
+        <!-- Tax & Currency -->
+        <section v-if="activeSection === 'tax'" class="card">
+          <div class="card-header">
+            <h3>Stawki VAT i waluty</h3>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Domyślna stawka VAT</label>
+              <select v-model="settings.tax.defaultVat" class="form-control">
+                <option v-for="rate in vatOptions" :key="rate.value" :value="rate.value">
+                  {{ rate.label }}
+                </option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Domyślna waluta</label>
+              <select v-model="settings.tax.defaultCurrency" class="form-control">
+                <option v-for="currency in currencyOptions" :key="currency" :value="currency">
+                  {{ currency }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- Payments -->
+        <section v-if="activeSection === 'payments'" class="card">
+          <div class="card-header">
+            <h3>Płatności i bank</h3>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Nazwa banku</label>
+              <input v-model.trim="settings.payment.bankName" type="text" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Numer rachunku (IBAN)</label>
+              <input v-model.trim="settings.payment.bankAccount" type="text" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Termin płatności (dni)</label>
+              <input v-model.number="settings.payment.paymentDays" type="number" min="0" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Domyślny sposób płatności</label>
+              <select v-model="settings.payment.paymentMethod" class="form-control">
+                <option>Przelew</option>
+                <option>Gotówka</option>
+                <option>Karta</option>
+                <option>Online</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- Permissions -->
+        <section v-if="activeSection === 'permissions'" class="card">
+          <div class="card-header">
+            <h3>Role i uprawnienia</h3>
+          </div>
+          <div class="permissions-grid">
+            <div v-for="role in roles" :key="role" class="permission-column">
+              <h4>{{ roleLabel(role) }}</h4>
+              <div class="permissions-list">
+                <label v-for="perm in permissionList" :key="perm.key" class="checkbox-label">
+                  <input v-model="settings.permissions[role][perm.key]" type="checkbox" />
+                  {{ perm.label }}
+                </label>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Users -->
+        <section v-if="activeSection === 'users'" class="card">
+          <div class="card-header">
+            <h3>Użytkownicy i role</h3>
+          </div>
+          <div class="users-list">
+            <div v-for="userItem in users" :key="userItem.email" class="user-row">
+              <div class="user-info">
+                <strong>{{ userItem.name }}</strong>
+                <span class="text-muted">{{ userItem.email }}</span>
+              </div>
+              <select
+                class="form-control w-auto"
+                :value="userItem.role"
+                @change="onUserRoleChange(userItem.email, $event.target.value)"
+              >
+                <option v-for="role in roles" :key="role" :value="role">
+                  {{ roleLabel(role) }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
-
-    <button class="back-to-top" @click="scrollToTop">Powrót na górę</button>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { defaultSettings, getSettings, saveSettings as saveSettingsToStore } from '@/services/settings'
 import { getUsers, updateUserRole } from '@/services/auth'
 
-const router = useRouter()
+const activeSection = ref('company')
+const users = ref([])
+let saveTimer = null
+
+const sections = [
+  { id: 'company', label: 'Dane firmy', icon: 'fa fa-building' },
+  { id: 'branding', label: 'Branding', icon: 'fa fa-paint-brush' },
+  { id: 'discounts', label: 'Rabaty', icon: 'fa fa-percent' },
+  { id: 'numbering', label: 'Numeracja', icon: 'fa fa-list-ol' },
+  { id: 'tax', label: 'Podatki i waluty', icon: 'fa fa-money' },
+  { id: 'payments', label: 'Płatności', icon: 'fa fa-credit-card' },
+  { id: 'permissions', label: 'Uprawnienia', icon: 'fa fa-lock' },
+  { id: 'users', label: 'Użytkownicy', icon: 'fa fa-users' }
+]
+
+const numberingLabels = {
+  invoicePrefix: 'Faktura VAT',
+  proformaPrefix: 'Proforma',
+  advancePrefix: 'Zaliczkowa',
+  finalPrefix: 'Końcowa',
+  correctionPrefix: 'Korekta',
+  receiptPrefix: 'Paragon',
+  pzPrefix: 'PZ',
+  wzPrefix: 'WZ',
+  rwPrefix: 'RW',
+  mmPrefix: 'MM',
+  inwPrefix: 'INW',
+  soPrefix: 'Zam. Sprzedaży',
+  poPrefix: 'Zam. Zakupu',
+  rmaPrefix: 'Zwrot',
+  expensePrefix: 'Wydatek'
+}
 
 const vatOptions = [
   { value: '23', label: '23%' },
@@ -537,22 +334,19 @@ const vatOptions = [
 
 const currencyOptions = ['PLN', 'EUR', 'USD', 'GBP', 'CZK']
 
-const settings = reactive(structuredClone(defaultSettings))
-
 const permissionList = [
   { key: 'manageSettings', label: 'Ustawienia' },
-  { key: 'manageUsers', label: 'Użytkownicy i role' },
+  { key: 'manageUsers', label: 'Użytkownicy' },
   { key: 'manageDocuments', label: 'Dokumenty' },
-  { key: 'createDocuments', label: 'Wystawianie dokumentów' },
-  { key: 'manageInvoices', label: 'Faktury i podglądy' },
+  { key: 'createDocuments', label: 'Tworzenie' },
   { key: 'managePayments', label: 'Płatności' },
   { key: 'manageReports', label: 'Raporty' },
   { key: 'manageContacts', label: 'Kontrahenci' },
   { key: 'manageWarehouse', label: 'Magazyn' },
-  { key: 'manageSalesOrders', label: 'Zamówienia sprzedaży' },
-  { key: 'managePurchaseOrders', label: 'Zamówienia zakupu' },
-  { key: 'managePicking', label: 'Kompletacja (picking)' },
-  { key: 'manageReturns', label: 'Zwroty (RMA)' },
+  { key: 'manageSalesOrders', label: 'Zam. Sprzedaży' },
+  { key: 'managePurchaseOrders', label: 'Zam. Zakupu' },
+  { key: 'managePicking', label: 'Picking' },
+  { key: 'manageReturns', label: 'Zwroty' },
   { key: 'managePriceLists', label: 'Cenniki' }
 ]
 
@@ -564,6 +358,8 @@ const roleLabels = {
 
 const roleOrder = ['OWNER', 'ACCOUNTANT', 'VIEWER']
 
+const settings = reactive(structuredClone(defaultSettings))
+
 const roles = computed(() => {
   const existing = Object.keys(settings.permissions || {})
   const ordered = roleOrder.filter((role) => existing.includes(role))
@@ -572,20 +368,6 @@ const roles = computed(() => {
 })
 
 const roleLabel = (role) => roleLabels[role] ?? role
-
-const users = ref([])
-const activeSection = ref(null)
-const isLoading = ref(true)
-let saveTimer = null
-
-const usersByRole = computed(() => {
-  return users.value.reduce((acc, userItem) => {
-    const role = userItem.role || 'unknown'
-    if (!acc[role]) acc[role] = []
-    acc[role].push(userItem)
-    return acc
-  }, {})
-})
 
 const thresholdForm = reactive({ minNetto: 0, percent: 0 })
 const couponForm = reactive({ code: '', percent: 0 })
@@ -605,16 +387,10 @@ const loadSettings = () => {
   settings.discounts.coupons = parsed.discounts?.coupons ?? settings.discounts.coupons
   settings.permissions = parsed.permissions ?? settings.permissions
   ensureDefaults()
-  isLoading.value = false
 }
 
 const loadUsers = () => {
   users.value = getUsers()
-}
-
-const selectSection = (section) => {
-  activeSection.value = section
-  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 const ensureDefaults = () => {
@@ -631,13 +407,6 @@ const ensureDefaults = () => {
     permissionList.forEach(({ key }) => {
       if (settings.permissions[role][key] === undefined) {
         settings.permissions[role][key] = !!defaults[role]?.[key]
-      }
-    })
-  })
-  Object.keys(settings.permissions || {}).forEach((role) => {
-    permissionList.forEach(({ key }) => {
-      if (settings.permissions[role][key] === undefined) {
-        settings.permissions[role][key] = false
       }
     })
   })
@@ -678,25 +447,22 @@ const saveSettings = async () => {
     await saveSettingsToStore(payload)
     alert('Ustawienia zapisane!')
     window.dispatchEvent(new Event('permissions-updated'))
-    window.dispatchEvent(new Event('ui-updated'))
   } catch (error) {
-    alert('Nie udało się zapisać ustawień. Spróbuj ponownie.')
+    alert('Nie udało się zapisać ustawień.')
   }
 }
 
 const autoSave = () => {
-  if (isLoading.value) return
   if (saveTimer) clearTimeout(saveTimer)
   saveTimer = setTimeout(async () => {
     try {
       const payload = JSON.parse(JSON.stringify(toRaw(settings)))
       await saveSettingsToStore(payload)
       window.dispatchEvent(new Event('permissions-updated'))
-      window.dispatchEvent(new Event('ui-updated'))
     } catch {
-      // ignore autosave errors
+      // ignore
     }
-  }, 400)
+  }, 500)
 }
 
 const onUserRoleChange = async (email, role) => {
@@ -707,25 +473,11 @@ const onUserRoleChange = async (email, role) => {
 const handleLogoUpload = (event) => {
   const file = event.target.files?.[0]
   if (!file) return
-
-  if (!['image/png', 'image/jpeg'].includes(file.type)) {
-    alert('Proszę wybrać plik PNG lub JPG')
-    return
-  }
-
   const reader = new FileReader()
   reader.onload = () => {
     settings.template.logo = reader.result
   }
   reader.readAsDataURL(file)
-}
-
-const goHome = () => {
-  router.push({ name: 'home' })
-}
-
-const scrollToTop = () => {
-  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 onMounted(() => {
@@ -736,4 +488,219 @@ onMounted(() => {
 watch(settings, autoSave, { deep: true })
 </script>
 
-<style src="./Settings.css"></style>
+<style scoped>
+.settings-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.settings-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: var(--spacing-xl);
+  align-items: start;
+}
+
+.settings-nav {
+  padding: var(--spacing-md);
+  position: sticky;
+  top: 20px;
+}
+
+.settings-nav h3 {
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  color: var(--secondary-500);
+  margin-bottom: var(--spacing-md);
+  padding-left: var(--spacing-sm);
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  color: var(--secondary-600);
+  font-weight: var(--font-medium);
+  text-align: left;
+  transition: all var(--transition-fast);
+  margin-bottom: 2px;
+}
+
+.nav-link:hover {
+  background: var(--secondary-50);
+  color: var(--primary-600);
+}
+
+.nav-link.active {
+  background: var(--primary-50);
+  color: var(--primary-700);
+}
+
+.nav-link i {
+  width: 20px;
+  text-align: center;
+}
+
+.card-header {
+  margin-bottom: var(--spacing-lg);
+  border-bottom: 1px solid var(--app-border);
+  padding-bottom: var(--spacing-md);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.form-grid.dense {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.full-width {
+  grid-column: 1 / -1;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  cursor: pointer;
+  font-size: var(--text-sm);
+}
+
+.logo-preview {
+  margin-top: var(--spacing-sm);
+  max-width: 200px;
+  border: 1px solid var(--app-border);
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+}
+
+.preview-img {
+  max-width: 100%;
+  height: auto;
+}
+
+.color-picker-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.color-input {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.color-value {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--secondary-600);
+}
+
+.chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-xs);
+}
+
+.chip {
+  background: var(--secondary-100);
+  padding: 4px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chip-remove {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--secondary-500);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0;
+}
+
+.inline-form {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.permission-column h4 {
+  margin-bottom: var(--spacing-md);
+  font-size: var(--text-sm);
+  color: var(--secondary-600);
+  text-transform: uppercase;
+}
+
+.permissions-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.users-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.user-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-md) 0;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.user-row:last-child {
+  border-bottom: none;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.w-32 { width: 8rem; }
+.w-auto { width: auto; }
+.mt-sm { margin-top: var(--spacing-sm); }
+.mt-md { margin-top: var(--spacing-md); }
+.mb-sm { margin-bottom: var(--spacing-sm); }
+.mb-lg { margin-bottom: var(--spacing-lg); }
+
+@media (max-width: 768px) {
+  .settings-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-nav {
+    position: static;
+    margin-bottom: var(--spacing-lg);
+  }
+}
+</style>
