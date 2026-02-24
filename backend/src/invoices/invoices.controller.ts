@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Query, Res, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Header, Param, Post, Query, Res, UseGuards } from '@nestjs/common'
 import { Response } from 'express'
 import { InvoicesService } from './invoices.service'
 import { CreateInvoiceDto } from './dto/create-invoice.dto'
@@ -11,7 +11,6 @@ import { CompanyGuard } from '../common/guards/company.guard'
 import { CompanyId } from '../common/decorators/company-id.decorator'
 import { RolesGuard } from '../common/guards/roles.guard'
 import { Roles } from '../common/decorators/roles.decorator'
-import { UpdateInvoiceDto } from './dto/update-invoice.dto'
 
 @Controller('invoices')
 @UseGuards(JwtAuthGuard, CompanyGuard, RolesGuard)
@@ -77,18 +76,6 @@ export class InvoicesController {
   @Roles('OWNER', 'ACCOUNTANT')
   create(@CompanyId() companyId: string, @Body() dto: CreateInvoiceDto) {
     return this.invoicesService.create(companyId, dto)
-  }
-
-  @Patch(':id')
-  @Roles('OWNER', 'ACCOUNTANT')
-  update(@CompanyId() companyId: string, @Param('id') id: string, @Body() dto: UpdateInvoiceDto) {
-    return this.invoicesService.update(companyId, id, dto)
-  }
-
-  @Delete(':id')
-  @Roles('OWNER')
-  delete(@CompanyId() companyId: string, @Param('id') id: string) {
-    return this.invoicesService.delete(companyId, id)
   }
 
   @Post('advance')

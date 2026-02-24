@@ -47,26 +47,7 @@ const writeSession = (session) => {
   setItem(AUTH_KEY, session)
 }
 
-export const getUsers = async () => {
-  if (hasApiBase()) {
-    try {
-      const companyId = getItem('companyId')
-      if (!companyId) return []
-      const members = await fetch(apiUrl(`/companies/${companyId}/members`), {
-        headers: { Authorization: `Bearer ${getItem('apiToken')}` }
-      }).then((r) => r.json())
-
-      return members.map((m) => ({
-        name: m.user.name,
-        email: m.user.email,
-        role: m.role
-      }))
-    } catch (e) {
-      console.error(e)
-      return []
-    }
-  }
-
+export const getUsers = () => {
   const stored = getItem(USERS_KEY, null)
   if (!Array.isArray(stored) || stored.length === 0) {
     return structuredClone(demoUsers)
@@ -79,20 +60,7 @@ export const saveUsers = async (users) => {
 }
 
 export const updateUserRole = async (email, role) => {
-  if (hasApiBase()) {
-    const companyId = getItem('companyId')
-    await fetch(apiUrl(`/companies/${companyId}/members`), {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${getItem('apiToken')}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ email, role })
-    })
-    return getUsers()
-  }
-
-  const users = await getUsers()
+  const users = getUsers()
   const index = users.findIndex((user) => user.email === email)
   if (index === -1) return users
   users[index] = { ...users[index], role }
@@ -203,4 +171,4 @@ export const logout = () => {
 }
 
 export const getDemoUsers = () =>
-  demoUsers.map(({ email, role, name }) => ({ email, role, name }))
+  getUsers().map(({ email, role, name }) => ({ email, role, name }))
