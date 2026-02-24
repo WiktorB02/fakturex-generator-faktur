@@ -89,18 +89,6 @@ model Company {
   numberingPatterns NumberingPattern[]
   sequences InvoiceSequence[]
   recurringInvoices RecurringInvoice[]
-  warehouses Warehouse[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Warehouse {
-  id        String   @id @default(cuid())
-  companyId String
-  name      String
-  code      String?
-  location  String?
-  company   Company  @relation(fields: [companyId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

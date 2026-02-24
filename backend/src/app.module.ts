@@ -12,8 +12,6 @@ import { NumberingModule } from './numbering/numbering.module'
 import { MailerModule } from './mailer/mailer.module'
 import { ReportsModule } from './reports/reports.module'
 import { RecurringModule } from './recurring/recurring.module'
-import { WarehousesModule } from './warehouses/warehouses.module'
-import { SettingsModule } from './settings/settings.module'
 
 @Module({
   imports: [
@@ -29,9 +27,7 @@ import { SettingsModule } from './settings/settings.module'
     NumberingModule,
     MailerModule,
     ReportsModule,
-    RecurringModule,
-    WarehousesModule,
-    SettingsModule
+    RecurringModule
   ]
 })
 export class AppModule {}

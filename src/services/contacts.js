@@ -1,59 +1,33 @@
-import { apiFetch } from '@/services/api'
+import { getItem, setItem } from '@/services/secureStore'
 
-export const getContacts = async () => {
-  try {
-    const clients = await apiFetch('/clients')
-    return clients.map(c => ({
-      id: c.id,
-      name: c.name,
-      nip: c.nip,
-      address: c.address,
-      email: c.email,
-      phone: c.phone
-    }))
-  } catch (error) {
-    console.error('Failed to fetch contacts:', error)
-    return []
-  }
+const CONTACTS_KEY = 'contacts'
+
+export const getContacts = () => {
+  return getItem(CONTACTS_KEY, []) || []
 }
 
-export const addContact = async (contact) => {
-  const dto = {
-    name: contact.name,
-    nip: contact.nip,
-    address: contact.address,
-    email: contact.email,
-    phone: contact.phone
-  }
-
-  await apiFetch('/clients', {
-    method: 'POST',
-    body: JSON.stringify(dto)
-  })
-
-  return getContacts()
+const saveContacts = (contacts) => {
+  setItem(CONTACTS_KEY, contacts)
 }
 
-export const updateContact = async (id, update) => {
-  const dto = {
-    name: update.name,
-    nip: update.nip,
-    address: update.address,
-    email: update.email,
-    phone: update.phone
-  }
-
-  await apiFetch(`/clients/${id}`, {
-    method: 'PATCH',
-    body: JSON.stringify(dto)
-  })
-
-  return getContacts()
+export const addContact = (contact) => {
+  const contacts = getContacts()
+  const newContact = { id: crypto.randomUUID(), ...contact }
+  contacts.unshift(newContact)
+  saveContacts(contacts)
+  return contacts
 }
 
-export const removeContact = async (id) => {
-  await apiFetch(`/clients/${id}`, {
-    method: 'DELETE'
-  })
-  return getContacts()
+export const updateContact = (id, update) => {
+  const contacts = getContacts().map((contact) =>
+    contact.id === id ? { ...contact, ...update } : contact
+  )
+  saveContacts(contacts)
+  return contacts
+}
+
+export const removeContact = (id) => {
+  const contacts = getContacts().filter((contact) => contact.id !== id)
+  saveContacts(contacts)
+  return contacts
 }

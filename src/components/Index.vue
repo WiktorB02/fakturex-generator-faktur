@@ -195,9 +195,9 @@ const goToContacts = () => router.push({ name: 'contacts' })
 const goToWarehouse = () => router.push({ name: 'warehouse' })
 const goToSettings = () => router.push({ name: 'settings' })
 
-const loadData = async () => {
-  documents.value = await getDocuments()
-  contacts.value = await getContacts()
+const loadData = () => {
+  documents.value = getDocuments()
+  contacts.value = getContacts()
 }
 
 onMounted(() => {
