@@ -1,81 +1,128 @@
 <template>
-  <div class="payments-page">
-    <header class="page-header">
-      <button class="ghost-btn" @click="goHome">Powrót</button>
-      <div>
-        <h1>Płatności i windykacja</h1>
-        <p>Monitoruj zaległości i ustawiaj przypomnienia.</p>
-      </div>
-      <div class="header-actions">
-        <input v-model.trim="query" placeholder="Szukaj po numerze lub kontrahencie..." />
-        <button class="primary-btn" @click="refresh">Odśwież</button>
-      </div>
-    </header>
-
-    <section class="card">
-      <div class="filter-bar">
-        <button :class="['chip', filter === 'all' && 'active']" @click="filter = 'all'">Wszystkie</button>
-        <button :class="['chip', filter === 'unpaid' && 'active']" @click="filter = 'unpaid'">Nieopłacone</button>
-        <button :class="['chip', filter === 'overdue' && 'active']" @click="filter = 'overdue'">Po terminie</button>
-        <button :class="['chip', filter === 'paid' && 'active']" @click="filter = 'paid'">Opłacone</button>
+  <div class="page-content">
+    <div class="actions-bar">
+      <div class="search-wrapper">
+        <i class="fa fa-search search-icon"></i>
+        <input
+          v-model.trim="query"
+          placeholder="Szukaj po numerze lub kontrahencie..."
+          class="form-control with-icon"
+        />
       </div>
 
-      <table v-if="filteredDocuments.length" class="payments-table">
-        <thead>
-          <tr>
-            <th>Dokument</th>
-            <th>Kontrahent</th>
-            <th>Termin</th>
-            <th>Kwota</th>
-            <th>Status</th>
-            <th>Przypomnienie</th>
-            <th>Akcje</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="doc in filteredDocuments" :key="doc.id">
-            <td>
-              <div class="doc-number">{{ doc.number }}</div>
-              <div class="doc-type">{{ typeLabels[doc.type] }}</div>
-            </td>
-            <td>{{ doc.counterparty?.name || '-' }}</td>
-            <td>{{ formatDate(doc.document?.dueDate) }}</td>
-            <td>{{ doc.totals?.brutto }} {{ doc.currency }}</td>
-            <td>
-              <span class="status" :class="doc.document?.paymentStatus">
-                {{ statusLabels[doc.document?.paymentStatus] || '—' }}
-              </span>
-            </td>
-            <td>
-              <div class="reminder">
-                <input
-                  type="date"
-                  :value="doc.document?.reminderDate || ''"
-                  @change="updateReminder(doc, $event.target.value)"
-                />
-                <input
-                  type="text"
-                  placeholder="Notatka"
-                  :value="doc.document?.reminderNote || ''"
-                  @change="updateReminderNote(doc, $event.target.value)"
-                />
-              </div>
-            </td>
-            <td class="actions">
-              <button class="ghost-btn" @click="togglePaid(doc)">
-                {{ doc.document?.paymentStatus === 'paid' ? 'Oznacz nieopł.' : 'Oznacz opł.' }}
-              </button>
-              <button class="danger-btn" @click="openPreview(doc)">Podgląd</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div v-else class="empty-state">
-        <h3>Brak płatności</h3>
-        <p>Wszystkie dokumenty są opłacone lub nie mają terminu.</p>
+      <div class="action-buttons">
+        <button class="btn btn-secondary" @click="refresh">
+          <i class="fa fa-refresh"></i> Odśwież
+        </button>
       </div>
-    </section>
+    </div>
+
+    <div class="filter-tabs">
+      <button
+        :class="['tab-btn', filter === 'all' && 'active']"
+        @click="filter = 'all'"
+      >
+        Wszystkie
+      </button>
+      <button
+        :class="['tab-btn', filter === 'unpaid' && 'active']"
+        @click="filter = 'unpaid'"
+      >
+        Nieopłacone
+      </button>
+      <button
+        :class="['tab-btn', filter === 'overdue' && 'active']"
+        @click="filter = 'overdue'"
+      >
+        Po terminie
+      </button>
+      <button
+        :class="['tab-btn', filter === 'paid' && 'active']"
+        @click="filter = 'paid'"
+      >
+        Opłacone
+      </button>
+    </div>
+
+    <div class="card table-card">
+      <div class="table-responsive">
+        <table v-if="filteredDocuments.length" class="table">
+          <thead>
+            <tr>
+              <th>Dokument</th>
+              <th>Kontrahent</th>
+              <th>Termin płatności</th>
+              <th>Kwota</th>
+              <th>Status</th>
+              <th>Przypomnienie</th>
+              <th class="text-right">Akcje</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="doc in filteredDocuments" :key="doc.id">
+              <td>
+                <div class="doc-info">
+                  <span class="font-medium">{{ doc.number }}</span>
+                  <span class="text-muted text-xs">{{ typeLabels[doc.type] }}</span>
+                </div>
+              </td>
+              <td>{{ doc.counterparty?.name || '-' }}</td>
+              <td :class="{ 'text-danger': isOverdue(doc) && doc.document?.paymentStatus !== 'paid' }">
+                {{ formatDate(doc.document?.dueDate) }}
+                <span v-if="isOverdue(doc) && doc.document?.paymentStatus !== 'paid'" class="text-xs block">
+                  (Po terminie)
+                </span>
+              </td>
+              <td class="font-bold">{{ doc.totals?.brutto }} {{ doc.currency }}</td>
+              <td>
+                <span class="badge" :class="getStatusClass(doc)">
+                  {{ getStatusLabel(doc) }}
+                </span>
+              </td>
+              <td>
+                <div class="reminder-inputs">
+                  <input
+                    type="date"
+                    class="form-control form-control-sm"
+                    :value="doc.document?.reminderDate || ''"
+                    @change="(e) => updateReminder(doc, e.target.value)"
+                    title="Data przypomnienia"
+                  />
+                  <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    placeholder="Notatka"
+                    :value="doc.document?.reminderNote || ''"
+                    @change="(e) => updateReminderNote(doc, e.target.value)"
+                  />
+                </div>
+              </td>
+              <td class="text-right actions-cell">
+                <button
+                  class="btn-icon"
+                  :class="doc.document?.paymentStatus === 'paid' ? 'success' : 'warning'"
+                  @click="togglePaid(doc)"
+                  :title="doc.document?.paymentStatus === 'paid' ? 'Oznacz jako nieopłacone' : 'Oznacz jako opłacone'"
+                >
+                  <i class="fa" :class="doc.document?.paymentStatus === 'paid' ? 'fa-check-circle' : 'fa-circle-o'"></i>
+                </button>
+                <button class="btn-icon" @click="openPreview(doc)" title="Podgląd">
+                  <i class="fa fa-eye"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div v-else class="empty-state">
+          <div class="empty-icon">
+            <i class="fa fa-check-circle-o"></i>
+          </div>
+          <h3>Brak płatności</h3>
+          <p>Brak dokumentów spełniających kryteria filtrowania.</p>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -97,15 +144,11 @@ const typeLabels = {
   correction: 'Korekta'
 }
 
-const statusLabels = {
-  unpaid: 'Nieopłacona',
-  paid: 'Opłacona'
-}
-
 const salesTypes = ['invoice', 'proforma', 'advance', 'final', 'correction']
 
 const loadDocuments = () => {
-  documents.value = getDocuments().filter((doc) => salesTypes.includes(doc.type))
+  const allDocs = getDocuments() || []
+  documents.value = allDocs.filter((doc) => salesTypes.includes(doc.type))
 }
 
 const refresh = () => {
@@ -124,7 +167,7 @@ const filteredDocuments = computed(() => {
   let base = documents.value
   if (filter.value === 'paid') base = base.filter((doc) => doc.document?.paymentStatus === 'paid')
   if (filter.value === 'unpaid') base = base.filter((doc) => doc.document?.paymentStatus !== 'paid')
-  if (filter.value === 'overdue') base = base.filter(isOverdue)
+  if (filter.value === 'overdue') base = base.filter((doc) => isOverdue(doc))
 
   if (!query.value) return base
   const term = query.value.toLowerCase()
@@ -135,17 +178,38 @@ const filteredDocuments = computed(() => {
   )
 })
 
+const getStatusClass = (doc) => {
+  if (doc.document?.paymentStatus === 'paid') return 'badge-success'
+  if (isOverdue(doc)) return 'badge-danger'
+  return 'badge-warning'
+}
+
+const getStatusLabel = (doc) => {
+  if (doc.document?.paymentStatus === 'paid') return 'Opłacona'
+  if (isOverdue(doc)) return 'Po terminie'
+  return 'Nieopłacona'
+}
+
 const togglePaid = (doc) => {
   const nextStatus = doc.document?.paymentStatus === 'paid' ? 'unpaid' : 'paid'
-  documents.value = updateDocument(doc.id, { document: { paymentStatus: nextStatus } })
+  const updatedDocs = updateDocument(doc.id, { document: { paymentStatus: nextStatus } })
+  // We need to update local state to reflect changes immediately or reload
+  // updateDocument returns all documents, so we can re-filter
+  const updatedDoc = updatedDocs.find(d => d.id === doc.id)
+  if (updatedDoc) {
+      const index = documents.value.findIndex(d => d.id === doc.id)
+      if (index !== -1) {
+          documents.value[index] = updatedDoc
+      }
+  }
 }
 
 const updateReminder = (doc, value) => {
-  documents.value = updateDocument(doc.id, { document: { reminderDate: value } })
+  updateDocument(doc.id, { document: { reminderDate: value } })
 }
 
 const updateReminderNote = (doc, value) => {
-  documents.value = updateDocument(doc.id, { document: { reminderNote: value } })
+  updateDocument(doc.id, { document: { reminderNote: value } })
 }
 
 const openPreview = (doc) => {
@@ -160,11 +224,174 @@ const formatDate = (value) => {
   return parsed.toLocaleDateString('pl-PL')
 }
 
-const goHome = () => {
-  router.push({ name: 'home' })
-}
-
 onMounted(loadDocuments)
 </script>
 
-<style src="./Payments.css"></style>
+<style scoped>
+.page-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.search-wrapper {
+  position: relative;
+  flex: 1;
+  max-width: 400px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--secondary-400);
+}
+
+.with-icon {
+  padding-left: 36px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.filter-tabs {
+  display: flex;
+  gap: var(--spacing-xs);
+  border-bottom: 1px solid var(--app-border);
+  padding-bottom: 1px;
+}
+
+.tab-btn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--secondary-500);
+  font-weight: var(--font-medium);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all var(--transition-fast);
+}
+
+.tab-btn:hover {
+  color: var(--primary-600);
+}
+
+.tab-btn.active {
+  color: var(--primary-600);
+  border-bottom-color: var(--primary-600);
+}
+
+.table-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.doc-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.text-danger {
+  color: var(--danger);
+}
+
+.text-xs {
+  font-size: var(--text-xs);
+}
+
+.block {
+  display: block;
+}
+
+.reminder-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-control-sm {
+  padding: 2px 6px;
+  font-size: var(--text-xs);
+  height: 28px;
+}
+
+.actions-cell {
+  white-space: nowrap;
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--secondary-500);
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.btn-icon:hover {
+  background: var(--secondary-100);
+  color: var(--primary-600);
+}
+
+.btn-icon.success {
+  color: var(--success);
+}
+.btn-icon.success:hover {
+  background: var(--success-light);
+}
+
+.btn-icon.warning {
+  color: var(--warning);
+}
+.btn-icon.warning:hover {
+  background: var(--warning-light);
+}
+
+.empty-state {
+  padding: var(--spacing-3xl);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  color: var(--secondary-300);
+  margin-bottom: var(--spacing-sm);
+}
+
+@media (max-width: 768px) {
+  .actions-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-wrapper {
+    max-width: 100%;
+  }
+
+  .filter-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 8px;
+  }
+}
+</style>

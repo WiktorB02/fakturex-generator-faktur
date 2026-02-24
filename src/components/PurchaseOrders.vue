@@ -1,116 +1,151 @@
 <template>
-  <div class="orders-page">
-    <header class="page-header">
-      <button class="ghost-btn" @click="goHome">Powrót</button>
+  <div class="page-content">
+    <div class="actions-bar">
       <div>
-        <h1>Zamówienia zakupu</h1>
-        <p>Twórz i przyjmuj dostawy do magazynu.</p>
+        <!-- Title handled by TopBar -->
       </div>
-      <button class="primary-btn" @click="toggleForm">
-        {{ showForm ? 'Zamknij' : 'Nowe zamówienie' }}
-      </button>
-    </header>
 
-    <section v-if="showForm" class="card">
-      <h2>{{ editingId ? 'Edytuj zamówienie' : 'Nowe zamówienie' }}</h2>
+      <div class="action-buttons">
+        <button class="btn btn-primary" @click="openNewOrderForm">
+          <i class="fa fa-plus"></i> Nowe zamówienie
+        </button>
+      </div>
+    </div>
+
+    <!-- Order Form -->
+    <div v-if="showForm" class="card form-card mb-lg">
+      <div class="card-header">
+        <h3>{{ editingId ? 'Edytuj zamówienie' : 'Nowe zamówienie zakupu' }}</h3>
+        <button class="btn-icon" @click="closeForm">
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+
       <div class="form-grid">
-        <label>
-          Dostawca
-          <select v-model="form.contactId">
+        <div class="form-group">
+          <label class="form-label">Dostawca</label>
+          <select v-model="form.contactId" class="form-control">
             <option value="">Wybierz</option>
             <option v-for="contact in contacts" :key="contact.id" :value="contact.id">
               {{ contact.name }}
             </option>
           </select>
-        </label>
-        <label>
-          Magazyn
-          <select v-model="form.warehouseId">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Magazyn</label>
+          <select v-model="form.warehouseId" class="form-control">
             <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
               {{ warehouse.name }}
             </option>
           </select>
-        </label>
-        <label>
-          Termin dostawy
-          <input v-model="form.dueDate" type="date" />
-        </label>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Termin dostawy</label>
+          <input v-model="form.dueDate" type="date" class="form-control" />
+        </div>
       </div>
 
-      <div class="form-grid">
-        <label>
-          Produkt
-          <select v-model="itemForm.itemId">
-            <option value="">Wybierz produkt</option>
-            <option v-for="item in availableItems" :key="item.id" :value="item.id">
-              {{ item.name }}
-            </option>
-          </select>
-        </label>
-        <label>
-          Ilość
-          <input v-model.number="itemForm.quantity" type="number" min="1" />
-        </label>
-      </div>
-      <button class="ghost-btn" @click="addItem">Dodaj pozycję</button>
+      <div class="items-section">
+        <h4>Pozycje zamówienia</h4>
+        <div class="items-form-row">
+          <div class="form-group flex-grow">
+            <label class="form-label">Produkt</label>
+            <select v-model="itemForm.itemId" class="form-control">
+              <option value="">Wybierz produkt</option>
+              <option v-for="item in availableItems" :key="item.id" :value="item.id">
+                {{ item.name }}
+              </option>
+            </select>
+          </div>
+          <div class="form-group w-24">
+            <label class="form-label">Ilość</label>
+            <input v-model.number="itemForm.quantity" type="number" min="1" class="form-control" />
+          </div>
+          <div class="form-group flex-end">
+            <button class="btn btn-secondary" @click="addItem">
+              <i class="fa fa-plus"></i>
+            </button>
+          </div>
+        </div>
 
-      <table v-if="form.items.length" class="orders-table">
-        <thead>
-          <tr>
-            <th>Produkt</th>
-            <th>Ilość</th>
-            <th>Akcje</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(item, index) in form.items" :key="index">
-            <td>{{ itemName(item.itemId) }}</td>
-            <td>{{ item.quantity }}</td>
-            <td class="actions">
-              <button class="danger-btn" @click="removeItem(index)">Usuń</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+        <div class="table-responsive mt-md" v-if="form.items.length">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Produkt</th>
+                <th>Ilość</th>
+                <th class="text-right">Akcje</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="(item, index) in form.items" :key="index">
+                <td>{{ itemName(item.itemId) }}</td>
+                <td>{{ item.quantity }}</td>
+                <td class="text-right">
+                  <button class="btn-icon danger" @click="removeItem(index)">
+                    <i class="fa fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div v-else class="empty-items">
+          Brak pozycji w zamówieniu
+        </div>
+      </div>
 
       <div class="form-actions">
-        <button class="ghost-btn" @click="resetForm">Wyczyść</button>
-        <button class="primary-btn" @click="saveOrder">Zapisz</button>
+        <button class="btn btn-ghost" @click="closeForm">Anuluj</button>
+        <button class="btn btn-primary" @click="saveOrder">
+          <i class="fa fa-save"></i> Zapisz
+        </button>
       </div>
-    </section>
+    </div>
 
-    <section class="card">
-      <h2>Lista zamówień</h2>
-      <table v-if="orders.length" class="orders-table">
-        <thead>
-          <tr>
-            <th>Dostawca</th>
-            <th>Magazyn</th>
-            <th>Pozycji</th>
-            <th>Termin</th>
-            <th>Status</th>
-            <th>Akcje</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="order in orders" :key="order.id">
-            <td>{{ contactName(order.contactId) }}</td>
-            <td>{{ warehouseName(order.warehouseId) }}</td>
-            <td>{{ order.items?.length || 0 }}</td>
-            <td>{{ order.dueDate || '-' }}</td>
-            <td>{{ statusLabels[order.status] }}</td>
-            <td class="actions">
-              <button class="ghost-btn" @click="receiveOrder(order)">Przyjmij</button>
-              <button class="danger-btn" @click="deleteOrder(order.id)">Usuń</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <div v-else class="empty-state">
-        <h3>Brak zamówień</h3>
-        <p>Dodaj pierwsze zamówienie zakupu.</p>
+    <!-- Orders List -->
+    <div class="card table-card">
+      <div class="table-responsive">
+        <table v-if="orders.length" class="table">
+          <thead>
+            <tr>
+              <th>Dostawca</th>
+              <th>Magazyn</th>
+              <th>Pozycji</th>
+              <th>Termin</th>
+              <th>Status</th>
+              <th class="text-right">Akcje</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="order in orders" :key="order.id">
+              <td>{{ contactName(order.contactId) }}</td>
+              <td>{{ warehouseName(order.warehouseId) }}</td>
+              <td>{{ order.items?.length || 0 }}</td>
+              <td>{{ order.dueDate || '-' }}</td>
+              <td>
+                <span class="badge" :class="getStatusClass(order.status)">
+                  {{ statusLabels[order.status] }}
+                </span>
+              </td>
+              <td class="text-right actions-cell">
+                <button class="btn btn-sm btn-primary mr-sm" @click="receiveOrder(order)" v-if="order.status !== 'received'">
+                  Przyjmij
+                </button>
+                <button class="btn-icon danger" @click="deleteOrder(order.id)">
+                  <i class="fa fa-trash"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-else class="empty-state">
+          <div class="empty-icon"><i class="fa fa-truck"></i></div>
+          <h3>Brak zamówień</h3>
+          <p>Dodaj pierwsze zamówienie zakupu.</p>
+        </div>
       </div>
-    </section>
+    </div>
   </div>
 </template>
 
@@ -167,9 +202,14 @@ const loadData = () => {
   }
 }
 
-const toggleForm = () => {
-  showForm.value = !showForm.value
-  if (!showForm.value) resetForm()
+const openNewOrderForm = () => {
+  resetForm()
+  showForm.value = true
+}
+
+const closeForm = () => {
+  showForm.value = false
+  resetForm()
 }
 
 const addItem = () => {
@@ -183,7 +223,11 @@ const removeItem = (index) => {
 }
 
 const saveOrder = () => {
-  if (!form.value.contactId || !form.value.items.length) return
+  if (!form.value.contactId || !form.value.items.length) {
+    alert('Wybierz dostawcę i dodaj pozycje.')
+    return
+  }
+
   if (editingId.value) {
     orders.value = updatePurchaseOrder(editingId.value, { ...form.value })
   } else {
@@ -210,12 +254,13 @@ const saveOrder = () => {
       totals: { netto: '0.00', vat: '0.00', brutto: '0.00' }
     })
   }
-  resetForm()
-  showForm.value = false
+  closeForm()
 }
 
 const deleteOrder = (id) => {
-  orders.value = removePurchaseOrder(id)
+  if (confirm('Czy na pewno usunąć zamówienie?')) {
+    orders.value = removePurchaseOrder(id)
+  }
 }
 
 const receiveOrder = (order) => {
@@ -261,17 +306,183 @@ const itemName = (id) => inventory.value.find((item) => item.id === id)?.name ||
 const contactName = (id) => contacts.value.find((contact) => contact.id === id)?.name || '-'
 const warehouseName = (id) => warehouses.value.find((warehouse) => warehouse.id === id)?.name || '-'
 
+const getStatusClass = (status) => {
+  switch (status) {
+    case 'received': return 'badge-success'
+    case 'confirmed': return 'badge-info'
+    default: return 'badge-secondary'
+  }
+}
+
 const resetForm = () => {
   editingId.value = ''
   form.value = { contactId: '', warehouseId: warehouses.value[0]?.id || '', dueDate: '', items: [] }
   itemForm.value = { itemId: '', quantity: 1 }
 }
 
-const goHome = () => {
-  router.push({ name: 'home' })
-}
-
 onMounted(loadData)
 </script>
 
-<style src="./Orders.css"></style>
+<style scoped>
+.page-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.actions-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.action-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.form-card {
+  animation: slideDown 0.3s ease;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  border-bottom: 1px solid var(--app-border);
+  padding-bottom: var(--spacing-md);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.items-section {
+  background: var(--secondary-50);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.items-section h4 {
+  margin-bottom: var(--spacing-md);
+  font-size: var(--text-sm);
+  color: var(--secondary-600);
+  text-transform: uppercase;
+}
+
+.items-form-row {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: flex-end;
+}
+
+.flex-grow {
+  flex: 1;
+}
+
+.w-24 {
+  width: 6rem;
+}
+
+.flex-end {
+  display: flex;
+  align-items: flex-end;
+}
+
+.mt-md {
+  margin-top: var(--spacing-md);
+}
+
+.mr-sm {
+  margin-right: var(--spacing-sm);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid var(--app-border);
+}
+
+.table-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.actions-cell {
+  white-space: nowrap;
+}
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--secondary-500);
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.btn-icon:hover {
+  background: var(--secondary-100);
+  color: var(--primary-600);
+}
+
+.btn-icon.danger:hover {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.empty-items {
+  text-align: center;
+  padding: var(--spacing-md);
+  color: var(--secondary-500);
+  font-style: italic;
+}
+
+.empty-state {
+  padding: var(--spacing-3xl);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.empty-icon {
+  font-size: 3rem;
+  color: var(--secondary-300);
+  margin-bottom: var(--spacing-sm);
+}
+
+.mb-lg {
+  margin-bottom: var(--spacing-lg);
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .items-form-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .w-24 {
+    width: 100%;
+  }
+}
+</style>

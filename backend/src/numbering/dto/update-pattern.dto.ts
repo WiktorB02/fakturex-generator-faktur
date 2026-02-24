@@ -1,5 +1,5 @@
 import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator'
-import { InvoiceType, ResetPeriod } from '../../common/enums'
+import { InvoiceType, ResetPeriod } from '@prisma/client'
 
 export class UpdatePatternDto {
   @IsEnum(InvoiceType)

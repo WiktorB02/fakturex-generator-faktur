@@ -1,29 +1,20 @@
 <template>
-  <form @submit.prevent class="document-form">
-    <header class="form-header">
-      <button class="ghost-btn" type="button" @click="goToHome">Powrót</button>
-      <div>
-        <h1>Nowy dokument</h1>
-        <p>Twórz faktury, paragony, PZ i wydatki w jednym miejscu.</p>
-      </div>
-      <button class="primary-btn" type="button" @click="goToPreview">
-        Podgląd i zapis
-      </button>
-    </header>
+  <div class="form-page">
+    <div class="form-header">
+      <!-- Title handled by TopBar -->
+    </div>
 
-    <div class="form-layout">
-      <div class="form-main">
-        <section class="card">
+    <form @submit.prevent class="form-layout">
+      <div class="form-content">
+        <!-- 1. Document Basics -->
+        <section class="card mb-lg">
           <div class="card-header">
-            <div>
-              <h2>1. Podstawy dokumentu</h2>
-              <p class="section-hint">Wybierz typ dokumentu i podstawowe daty.</p>
-            </div>
+            <h3>1. Podstawy dokumentu</h3>
           </div>
           <div class="form-grid">
-            <label>
-              Rodzaj dokumentu
-              <select v-model="document.type" class="field-primary">
+            <div class="form-group">
+              <label class="form-label">Rodzaj dokumentu</label>
+              <select v-model="document.type" class="form-control">
                 <optgroup label="Sprzedaż">
                   <option value="invoice">Faktura VAT</option>
                   <option value="proforma">Proforma</option>
@@ -39,315 +30,231 @@
                   <option value="expense">Wydatek</option>
                 </optgroup>
               </select>
-            </label>
-            <label>
-              Numer dokumentu
-              <input :value="document.number" type="text" readonly class="field-secondary" />
-              <span class="field-hint">Numer nadawany automatycznie według ustawień.</span>
-            </label>
-            <label>
-              Data wystawienia
-              <input v-model="document.issueDate" type="date" placeholder="Wybierz datę" class="field-primary" />
-              <span class="field-hint">Dzień wystawienia dokumentu.</span>
-            </label>
-            <label>
-              Data sprzedaży
-              <input v-model="document.saleDate" type="date" placeholder="Wybierz datę" class="field-secondary" />
-              <span class="field-hint">Data faktycznej sprzedaży/usługi.</span>
-            </label>
-            <label class="checkbox-row" v-if="showPaymentFields">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Numer</label>
+              <input :value="document.number" type="text" readonly class="form-control bg-secondary-50" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Data wystawienia</label>
+              <input v-model="document.issueDate" type="date" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Data sprzedaży</label>
+              <input v-model="document.saleDate" type="date" class="form-control" />
+            </div>
+          </div>
+
+          <div class="checkbox-group mb-md">
+            <label class="checkbox-label">
               <input v-model="showPaymentOptions" type="checkbox" />
               Pokaż opcje płatności
             </label>
-            <template v-if="showPaymentFields && showPaymentOptions">
-              <label>
-                Termin płatności
-                <input v-model="document.dueDate" type="date" placeholder="Wybierz termin" class="field-secondary" />
-                <span class="field-hint">Domyślnie liczony z ustawień płatności.</span>
-              </label>
-              <label>
-                Metoda płatności
-                <select v-model="document.paymentMethod" class="field-secondary">
-                  <option>Przelew</option>
-                  <option>Gotówka</option>
-                  <option>Karta</option>
-                  <option>Online</option>
-                </select>
-                <span class="field-hint">Wyświetlana na dokumencie i w podglądzie.</span>
-              </label>
-              <label>
-                Status płatności
-                <select v-model="document.paymentStatus" class="field-secondary">
-                  <option value="unpaid">Nieopłacona</option>
-                  <option value="paid">Opłacona</option>
-                </select>
-                <span class="field-hint">Używane w rejestrze i filtrach płatności.</span>
-              </label>
-            </template>
-            <label class="checkbox-row">
-              <input v-model="showAdvancedOptions" type="checkbox" />
-              Pokaż opcje zaawansowane
-            </label>
-            <template v-if="showAdvancedOptions">
-              <label>
-                Waluta
-                <select v-model="document.currency" class="field-secondary">
-                  <option v-for="currencyOption in currencyOptions" :key="currencyOption" :value="currencyOption">
-                    {{ currencyOption }}
-                  </option>
-                </select>
-              </label>
-              <label v-if="document.currency !== settings.tax.defaultCurrency">
-                Kurs waluty
-                <input v-model.number="document.exchangeRate" type="number" min="0" step="0.0001" class="field-secondary" />
-              </label>
-              <label v-if="document.currency !== settings.tax.defaultCurrency">
-                Data kursu
-                <input v-model="document.exchangeDate" type="date" class="field-secondary" />
-              </label>
-              <label>
-                Język dokumentu
-                <select v-model="document.language" class="field-secondary">
-                  <option value="pl">Polski</option>
-                  <option value="en">English</option>
-                </select>
-              </label>
-            </template>
-            <label v-if="showRelatedSelect">
-              Powiązany dokument
-              <select v-model="document.relatedNumber" class="field-secondary">
-                <option value="">Brak</option>
-                <option v-for="doc in relatedDocuments" :key="doc.id" :value="doc.number">
-                  {{ doc.number }} — {{ doc.counterparty?.name || 'Kontrahent' }}
-                </option>
+          </div>
+
+          <div v-if="showPaymentOptions" class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Termin płatności</label>
+              <input v-model="document.dueDate" type="date" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Metoda płatności</label>
+              <select v-model="document.paymentMethod" class="form-control">
+                <option>Przelew</option>
+                <option>Gotówka</option>
+                <option>Karta</option>
+                <option>Online</option>
               </select>
-            </label>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Status płatności</label>
+              <select v-model="document.paymentStatus" class="form-control">
+                <option value="unpaid">Nieopłacona</option>
+                <option value="paid">Opłacona</option>
+              </select>
+            </div>
           </div>
         </section>
 
-        <section v-if="isSalesDoc" class="card">
+        <!-- 2. Sales & Discounts -->
+        <section v-if="isSalesDoc" class="card mb-lg">
           <div class="card-header">
-            <div>
-              <h2>2. Sprzedaż i rabaty</h2>
-              <p class="section-hint">Cenniki, rabaty i ustawienia magazynowe.</p>
-            </div>
+            <h3>2. Sprzedaż i rabaty</h3>
           </div>
           <div class="form-grid">
-            <label>
-              Cennik
-              <select v-model="selectedPriceListId" class="field-secondary">
+            <div class="form-group">
+              <label class="form-label">Cennik</label>
+              <select v-model="selectedPriceListId" class="form-control">
                 <option value="">Domyślny</option>
                 <option v-for="list in priceLists" :key="list.id" :value="list.id">
                   {{ list.name }}
                 </option>
               </select>
-              <span class="field-hint">Wybór cennika automatycznie uzupełni ceny pozycji.</span>
-            </label>
-            <label>
-              Magazyn do WZ
-              <select v-model="selectedWarehouseId" class="field-secondary">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Magazyn do WZ</label>
+              <select v-model="selectedWarehouseId" class="form-control">
                 <option v-for="warehouse in warehouses" :key="warehouse.id" :value="warehouse.id">
                   {{ warehouse.name }}
                 </option>
               </select>
-              <span class="field-hint">Dotyczy automatycznego dokumentu WZ.</span>
-            </label>
-            <label class="checkbox-row">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Rabat globalny (%)</label>
+              <input v-model.number="globalDiscount" type="number" min="0" max="100" class="form-control" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Kupon rabatowy</label>
+              <input v-model.trim="couponCode" type="text" placeholder="Kod kuponu" class="form-control" />
+            </div>
+          </div>
+          <div class="checkbox-group">
+            <label class="checkbox-label">
               <input v-model="autoWz" type="checkbox" />
               Automatycznie generuj WZ
             </label>
-            <label>
-              Rabat globalny (%)
-              <input v-model.number="globalDiscount" type="number" min="0" max="100" class="field-secondary" />
-              <span class="field-hint">Dodatkowy rabat naliczany na cały dokument.</span>
-            </label>
-            <label>
-              Kupon rabatowy
-              <input v-model.trim="couponCode" type="text" placeholder="Kod kuponu" class="field-secondary" />
-              <span class="field-hint">Sprawdza kupony z ustawień.</span>
-            </label>
           </div>
         </section>
 
-        <section class="card">
+        <!-- 3. Counterparty -->
+        <section class="card mb-lg">
           <div class="card-header">
-            <div>
-              <h2>3. Dane wystawcy</h2>
-              <p class="section-hint">Możesz skorzystać z danych zapisanych w ustawieniach.</p>
-            </div>
+            <h3>3. {{ counterpartyTitle }}</h3>
           </div>
           <div class="form-grid">
-            <label class="checkbox-row">
-              <input v-model="useCompanyData" type="checkbox" />
-              Użyj danych firmy z ustawień
-            </label>
-          </div>
-          <div v-if="useCompanyData" class="issuer-preview">
-            <p><strong>{{ issuer.name || 'Brak nazwy firmy' }}</strong></p>
-            <p>NIP: {{ issuer.nip || '—' }}</p>
-            <p>Adres: {{ issuer.address || '—' }}</p>
-          </div>
-          <div v-else class="form-grid">
-            <label>
-              Nazwa firmy *
-              <input v-model="issuer.name" type="text" placeholder="Np. Firma Sp. z o.o." :class="{ error: validated && !issuer.name }" class="field-primary" />
-            </label>
-            <label>
-              NIP *
-              <input v-model="issuer.nip" type="text" placeholder="Np. 1234567890" :class="{ error: validated && !isValidNIP(issuer.nip) }" class="field-secondary" />
-            </label>
-            <label>
-              Adres *
-              <input v-model="issuer.address" type="text" placeholder="Ulica, kod, miasto" :class="{ error: validated && !issuer.address }" class="field-secondary" />
-            </label>
-          </div>
-        </section>
-
-        <section class="card">
-          <div class="card-header">
-            <div>
-              <h2>4. {{ counterpartyTitle }}</h2>
-              <p class="section-hint">Wybierz kontrahenta lub wpisz dane ręcznie.</p>
-            </div>
-          </div>
-          <div class="form-grid">
-            <label>
-              Wybierz kontrahenta
-              <select v-model="selectedContactId" @change="applyContact" class="field-primary">
+            <div class="form-group">
+              <label class="form-label">Wybierz z listy</label>
+              <select v-model="selectedContactId" @change="applyContact" class="form-control">
                 <option value="">Wpisz ręcznie</option>
                 <option v-for="contact in contacts" :key="contact.id" :value="contact.id">
                   {{ contact.name }}
                 </option>
               </select>
-            </label>
-            <label>
-              Nazwa *
-              <input v-model="counterparty.name" type="text" placeholder="Np. Klient Sp. z o.o." :class="{ error: validated && !counterparty.name }" class="field-primary" />
-            </label>
-            <label>
-              NIP
-              <input v-model="counterparty.nip" type="text" placeholder="Np. 1234567890" :class="{ error: validated && requireCounterpartyNip && !isValidNIP(counterparty.nip) }" class="field-secondary" />
-            </label>
-            <label>
-              Adres *
-              <input v-model="counterparty.address" type="text" placeholder="Ulica, kod, miasto" :class="{ error: validated && !counterparty.address }" class="field-secondary" />
-            </label>
+            </div>
+            <div class="form-group full-width-mobile">
+              <label class="form-label">Nazwa *</label>
+              <input v-model="counterparty.name" type="text" class="form-control" :class="{ 'is-invalid': validated && !counterparty.name }" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">NIP</label>
+              <input v-model="counterparty.nip" type="text" class="form-control" :class="{ 'is-invalid': validated && requireCounterpartyNip && !isValidNIP(counterparty.nip) }" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Adres *</label>
+              <input v-model="counterparty.address" type="text" class="form-control" :class="{ 'is-invalid': validated && !counterparty.address }" />
+            </div>
           </div>
         </section>
 
-        <section class="card">
+        <!-- 4. Items -->
+        <section class="card mb-lg">
           <div class="card-header">
-            <div>
-              <h2>5. Pozycje dokumentu</h2>
-              <p class="section-hint">Dodaj produkty z magazynu lub wpisz pozycje ręcznie.</p>
-            </div>
+            <h3>4. Pozycje dokumentu</h3>
           </div>
-          <div class="item-grid item-grid--header">
-            <span>Produkt / opis</span>
-            <span>Ilość</span>
-            <span>Cena netto</span>
-            <span>Rabat</span>
-            <span>VAT</span>
-            <span>Netto</span>
-            <span>Brutto</span>
+
+          <div class="items-table-wrapper">
+            <table class="table items-table">
+              <thead>
+                <tr>
+                  <th style="width: 30%">Produkt / Opis</th>
+                  <th style="width: 10%">Ilość</th>
+                  <th style="width: 15%">Cena netto</th>
+                  <th style="width: 10%">Rabat %</th>
+                  <th style="width: 10%">VAT</th>
+                  <th style="width: 15%" class="text-right">Brutto</th>
+                  <th style="width: 5%"></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(item, index) in items" :key="index">
+                  <td>
+                    <div class="flex-col gap-xs">
+                      <select @change="applyProductToItem(index, $event.target.value)" class="form-control form-control-sm mb-xs">
+                        <option value="">Magazyn...</option>
+                        <option v-for="product in filteredProducts" :key="product.name" :value="product.name">
+                          {{ product.name }}
+                        </option>
+                      </select>
+                      <input
+                        v-model="item.description"
+                        class="form-control"
+                        placeholder="Opis pozycji *"
+                        :class="{ 'is-invalid': validated && !item.description }"
+                      />
+                    </div>
+                  </td>
+                  <td>
+                    <input v-model.number="item.quantity" type="number" min="1" class="form-control" :class="{ 'is-invalid': validated && item.quantity <= 0 }" />
+                  </td>
+                  <td>
+                    <input v-model.number="item.price" type="number" min="0" step="0.01" class="form-control" :class="{ 'is-invalid': validated && item.price < 0 }" />
+                  </td>
+                  <td>
+                    <input v-model.number="item.discountPercent" type="number" min="0" max="100" class="form-control" />
+                  </td>
+                  <td>
+                    <select v-model="item.vat" class="form-control">
+                      <option v-for="rate in vatRates" :key="rate" :value="rate">
+                        {{ rate === 'zw' ? 'zw' : rate + '%' }}
+                      </option>
+                    </select>
+                  </td>
+                  <td class="text-right font-medium">
+                    {{ formatGrossValue(item) }}
+                  </td>
+                  <td class="text-right">
+                    <button type="button" class="btn-icon danger" @click="removeItem(index)">
+                      <i class="fa fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <div class="items-list">
-            <div v-for="(item, index) in items" :key="index" class="item-row">
-              <div class="item-grid">
-                <div>
-                  <select @change="applyProductToItem(index, $event.target.value)" class="field-secondary">
-                    <option value="">Wybierz z magazynu...</option>
-                    <option v-for="product in filteredProducts" :key="product.name" :value="product.name">
-                      {{ product.name }}
-                    </option>
-                  </select>
-                  <input
-                    v-model="item.description"
-                    placeholder="Opis pozycji *"
-                    :class="{ error: validated && !item.description }"
-                    class="field-primary"
-                  />
-                </div>
-                <input v-model.number="item.quantity" type="number" min="1" placeholder="Ilość *" :class="{ error: validated && item.quantity <= 0 }" class="field-primary" />
-                <input v-model.number="item.price" type="number" min="0" step="0.01" placeholder="Cena netto *" :class="{ error: validated && item.price < 0 }" class="field-primary" />
-                <input v-model.number="item.discountPercent" type="number" min="0" max="100" placeholder="Rabat %" class="field-secondary" />
-                <select v-model="item.vat" class="field-secondary">
-                  <option v-for="rate in vatRates" :key="rate" :value="rate">
-                    {{ rate === 'zw' ? 'zw' : rate + '%' }}
-                  </option>
-                </select>
-                <input type="text" :value="formatNet(item)" disabled />
-                <input type="text" :value="formatGross(item)" disabled />
-              </div>
-              <button class="danger-btn" type="button" @click="removeItem(index)">
-                Usuń pozycję
-              </button>
-            </div>
+
+          <div class="items-actions mt-md">
+            <button type="button" class="btn btn-secondary" @click="addItem">
+              <i class="fa fa-plus"></i> Dodaj pozycję
+            </button>
           </div>
-          <button class="ghost-btn" type="button" @click="addItem">Dodaj pozycję</button>
         </section>
 
-        <section class="card">
+        <!-- 5. Notes -->
+        <section class="card mb-lg">
           <div class="card-header">
-            <div>
-              <h2>6. Uwagi</h2>
-              <p class="section-hint">Dodatkowe informacje widoczne na dokumencie.</p>
-            </div>
+            <h3>5. Uwagi</h3>
           </div>
-          <textarea v-model="document.notes" rows="3" placeholder="Dodatkowe informacje..." class="field-secondary"></textarea>
+          <textarea v-model="document.notes" rows="3" class="form-control" placeholder="Dodatkowe informacje widoczne na dokumencie..."></textarea>
         </section>
       </div>
 
-      <aside class="form-side">
-        <section class="summary-card sticky-card">
-          <div>
-            <p>Suma netto</p>
+      <!-- Sidebar Summary -->
+      <aside class="form-sidebar">
+        <div class="summary-card sticky-card">
+          <div class="summary-row">
+            <span>Netto</span>
             <strong>{{ totalNetto }} {{ document.currency }}</strong>
           </div>
-          <div>
-            <p>VAT</p>
+          <div class="summary-row">
+            <span>VAT</span>
             <strong>{{ totalVat }} {{ document.currency }}</strong>
           </div>
-          <div>
-            <p>Suma brutto</p>
+          <div class="summary-row total">
+            <span>Do zapłaty</span>
             <strong>{{ totalBrutto }} {{ document.currency }}</strong>
           </div>
-          <button class="secondary-btn" type="button" @click="resetForm">Wyczyść formularz</button>
-        </section>
 
-        <section class="card compact-card sticky-card">
-          <h3>Podgląd wyborów</h3>
-          <div class="overview-list">
-            <div>
-              <span>Typ dokumentu</span>
-              <strong>{{ document.type }}</strong>
-            </div>
-            <div>
-              <span>Kontrahent</span>
-              <strong>{{ counterparty.name || 'Nie wybrano' }}</strong>
-            </div>
-            <div>
-              <span>Cennik</span>
-              <strong>{{ priceLists.find((list) => list.id === selectedPriceListId)?.name || 'Domyślny' }}</strong>
-            </div>
-            <div>
-              <span>Waluta</span>
-              <strong>{{ document.currency }}</strong>
-            </div>
-          </div>
-        </section>
+          <button type="button" class="btn btn-primary w-full mt-lg" @click="goToPreview">
+            <i class="fa fa-save"></i> Zapisz i Podgląd
+          </button>
 
-        <section class="card compact-card sticky-card">
-          <h3>Szybkie wskazówki</h3>
-          <ul class="hint-list">
-            <li>Najpierw wybierz kontrahenta — cennik i rabat uzupełnią się automatycznie.</li>
-            <li>Pozycje możesz dodawać z magazynu lub wpisać ręcznie.</li>
-            <li>Opcje zaawansowane są ukryte, aby nie rozpraszać początkujących.</li>
-          </ul>
-        </section>
+          <button type="button" class="btn btn-ghost w-full mt-sm" @click="resetForm">
+            Wyczyść formularz
+          </button>
+        </div>
       </aside>
-    </div>
-  </form>
+    </form>
+  </div>
 </template>
 
 <script setup>
@@ -359,7 +266,6 @@ import { getContacts } from '@/services/contacts'
 import { getInventory, adjustInventoryStock } from '@/services/inventory'
 import { getWarehouses } from '@/services/warehouses'
 import { getPriceLists } from '@/services/priceLists'
-import './InvoiceForm.css'
 
 const router = useRouter()
 const settings = ref(getSettings())
@@ -404,24 +310,6 @@ const isSalesDoc = computed(() =>
   ['invoice', 'proforma', 'advance', 'final', 'correction', 'receipt'].includes(document.value.type)
 )
 
-const showPaymentFields = computed(() => isSalesDoc.value && document.value.type !== 'receipt')
-
-const showRelatedSelect = computed(() =>
-  ['final', 'correction'].includes(document.value.type)
-)
-
-const relatedDocuments = computed(() => {
-  if (document.value.type === 'final') {
-    return existingDocuments.value.filter((doc) => doc.type === 'advance')
-  }
-  if (document.value.type === 'correction') {
-    return existingDocuments.value.filter((doc) =>
-      ['invoice', 'final', 'advance', 'proforma'].includes(doc.type)
-    )
-  }
-  return []
-})
-
 const counterpartyTitle = computed(() => {
   if (document.value.type === 'pz') return 'Dane dostawcy'
   if (document.value.type === 'expense') return 'Dane kontrahenta'
@@ -433,7 +321,6 @@ const requireCounterpartyNip = computed(() =>
 )
 
 const vatRates = computed(() => settings.value.tax.enabledVatRates)
-const currencyOptions = computed(() => settings.value.tax.enabledCurrencies)
 const filteredProducts = computed(() => {
   if (!selectedWarehouseId.value) return availableProducts.value
   return availableProducts.value.filter((item) => item.warehouseId === selectedWarehouseId.value)
@@ -540,7 +427,7 @@ const ensureDocumentDates = () => {
     document.value.saleDate = document.value.issueDate
   }
 
-  if (showPaymentFields.value && !document.value.dueDate) {
+  if (showPaymentOptions.value && !document.value.dueDate) {
     const days = Number(settings.value.payment.paymentDays || 0)
     const base = new Date(document.value.issueDate)
     base.setDate(base.getDate() + days)
@@ -623,14 +510,9 @@ const totalBrutto = computed(() =>
   (Number(totalNetto.value) + Number(totalVat.value)).toFixed(2)
 )
 
-const formatNet = (item) => {
+const formatGrossValue = (item) => {
   const discount = Number(item.discountPercent || 0) / 100
-  return `${(item.price * item.quantity * (1 - discount)).toFixed(2)} ${document.value.currency}`
-}
-
-const formatGross = (item) => {
-  const discount = Number(item.discountPercent || 0) / 100
-  return `${(item.price * item.quantity * (1 - discount) * (1 + vatToNumber(item.vat) / 100)).toFixed(2)} ${document.value.currency}`
+  return (item.price * item.quantity * (1 - discount) * (1 + vatToNumber(item.vat) / 100)).toFixed(2)
 }
 
 const resolvePrice = (productName, productId = '') => {
@@ -700,7 +582,7 @@ const goToPreview = () => {
     ensureDocumentDates()
     validated.value = true
     if (!validate()) {
-      alert('Uzupełnij poprawnie wszystkie wymagane pola przed przejściem do podglądu.')
+      alert('Uzupełnij poprawnie wszystkie wymagane pola.')
       return
     }
 
@@ -711,18 +593,8 @@ const goToPreview = () => {
     const safeName = String(counterparty.value.name || 'kontrahent')
     const filename = `${number}_${safeName.replace(/\s+/g, '_')}.pdf`
 
-    const clone = (value) => {
-      const raw = toRaw(value)
-      if (typeof structuredClone === 'function') {
-        try {
-          return structuredClone(raw)
-        } catch {
-          // fallback below
-        }
-      }
-      return JSON.parse(JSON.stringify(raw))
-    }
-    const createId = () => (crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`)
+    const clone = (value) => JSON.parse(JSON.stringify(toRaw(value)))
+    const createId = () => (crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}`)
 
     const issuerData = clone(issuer.value)
     const counterpartyData = clone(counterparty.value)
@@ -801,8 +673,7 @@ const goToPreview = () => {
     resetForm()
   } catch (error) {
     console.error('Błąd zapisu dokumentu:', error)
-    const details = error?.message ? `\nSzczegóły: ${error.message}` : ''
-    alert(`Nie udało się zapisać dokumentu. Sprawdź wymagane pola i spróbuj ponownie.${details}`)
+    alert('Nie udało się zapisać dokumentu. Spróbuj ponownie.')
   }
 }
 
@@ -848,3 +719,138 @@ watch(
   }
 )
 </script>
+
+<style scoped>
+.form-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.form-layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--spacing-xl);
+  align-items: start;
+}
+
+.form-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.card-header {
+  margin-bottom: var(--spacing-lg);
+  border-bottom: 1px solid var(--app-border);
+  padding-bottom: var(--spacing-md);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.checkbox-group {
+  margin-top: var(--spacing-sm);
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.items-table-wrapper {
+  overflow-x: auto;
+}
+
+.items-table {
+  width: 100%;
+  min-width: 800px;
+}
+
+.mb-xs { margin-bottom: 4px; }
+.gap-xs { gap: 4px; }
+.flex-col { display: flex; flex-direction: column; }
+
+.btn-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--secondary-500);
+  transition: all var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.btn-icon.danger:hover {
+  background: var(--danger-light);
+  color: var(--danger);
+}
+
+.summary-card {
+  background: var(--app-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  border: 1px solid var(--app-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.sticky-card {
+  position: sticky;
+  top: 20px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-sm);
+  font-size: var(--text-sm);
+  color: var(--secondary-600);
+}
+
+.summary-row.total {
+  border-top: 1px solid var(--app-border);
+  padding-top: var(--spacing-md);
+  margin-top: var(--spacing-md);
+  font-size: var(--text-lg);
+  color: var(--secondary-900);
+  font-weight: bold;
+}
+
+.is-invalid {
+  border-color: var(--danger);
+}
+
+.bg-secondary-50 {
+  background-color: var(--secondary-50);
+}
+
+.mb-lg { margin-bottom: var(--spacing-lg); }
+.mb-md { margin-bottom: var(--spacing-md); }
+.mt-lg { margin-top: var(--spacing-lg); }
+.mt-md { margin-top: var(--spacing-md); }
+.mt-sm { margin-top: var(--spacing-sm); }
+
+@media (max-width: 1024px) {
+  .form-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .form-sidebar {
+    grid-row: 1;
+  }
+
+  .sticky-card {
+    position: static;
+  }
+}
+</style>

@@ -9,50 +9,63 @@ Nowoczesna aplikacja do fakturowania, obsługi magazynu i dokumentów sprzedaży
 - Kontrahenci (NIP, tagi, historia), produkty, stany magazynowe
 - Płatności, statusy, należności
 - Raporty (miesięczny przychód, VAT, top klienci) + CSV/XLSX
-- Multi‑company + RBAC (Właściciel/Księgowy/Podgląd)
+- Multi‑company + RBAC (Owner/Accountant/Viewer)
 - Faktury cykliczne (scheduler)
 
 ## Stack
 - Frontend: Vue 3 + Vite
-- Backend: NestJS + Prisma + SQLite (dev) / PostgreSQL (prod)
+- Backend: NestJS + Prisma + PostgreSQL
 - PDF: Puppeteer
 - Mail: nodemailer (SMTP)
 
 ## Wymagania
 - Node.js 18+
+- Docker Desktop (PostgreSQL w kontenerze) lub lokalny PostgreSQL
 
-## Uruchomienie (szybki start - SQLite)
+## Uruchomienie (lokalnie)
 
-### 1) Backend API
+### 1) Baza danych (Docker)
+```bash
+cd backend
+docker compose up -d
+```
+
+### 2) Backend API
 ```bash
 cd backend
 npm install
 npm run prisma:generate
 npm run prisma:migrate -- --name init
-npm run prisma:seed
 npm run start:dev
 ```
 
-Backend startuje na porcie `3002`.
+Backend domyślnie startuje na porcie `3002` (ustawiane przez `PORT`).
 
-### 2) Frontend
+### 3) Frontend
 ```bash
 cd ..
 npm install
 npm run dev
 ```
 
-Frontend: http://localhost:3000/ (Dostęp przez proxy live preview)
+Frontend: http://127.0.0.1:5174/
 
 ## Konfiguracja środowiska
-Domyślna konfiguracja deweloperska używa SQLite (`backend/dev.db`).
-Aby użyć PostgreSQL, należy zmienić `provider` w `backend/prisma/schema.prisma` i ustawić `DATABASE_URL`.
+Pliki:
+- [backend/.env](backend/.env)
+- [.env](.env)
+
+Przykład:
+```
+VITE_API_URL=http://localhost:3002
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/fakturex?schema=public
+```
 
 ## Dane testowe
 Zarejestrowane konta demo (backend):
-- admin@fakturex.pl / admin123 (Właściciel)
-- ksiegowy@fakturex.pl / demo123 (Księgowość)
-- podglad@fakturex.pl / demo123 (Podgląd)
+- admin@fakturex.pl / admin123
+- ksiegowy@fakturex.pl / demo123
+- podglad@fakturex.pl / demo123
 
 ## Struktura
 - [src/](src/) – frontend
