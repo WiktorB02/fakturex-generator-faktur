@@ -178,21 +178,21 @@ const getStatusLabel = (doc) => {
   return 'Oczekuje'
 }
 
-const loadDocuments = () => {
-  documents.value = getDocuments()
+const loadDocuments = async () => {
+  documents.value = await getDocuments()
 }
 
-const deleteDocument = (id) => {
+const deleteDocument = async (id) => {
   if (confirm('Czy na pewno chcesz usunąć ten dokument?')) {
-    removeDocument(id)
-    documents.value = getDocuments()
+    await removeDocument(id)
+    documents.value = await getDocuments()
     toast.success('Dokument został usunięty')
   }
 }
 
-const deleteAll = () => {
+const deleteAll = async () => {
   if (confirm('Czy na pewno chcesz usunąć WSZYSTKIE dokumenty? Operacji nie można cofnąć.')) {
-    clearDocuments()
+    await clearDocuments()
     documents.value = []
     toast.success('Wszystkie dokumenty zostały usunięte')
   }

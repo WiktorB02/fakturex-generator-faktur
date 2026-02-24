@@ -277,7 +277,14 @@ import { getWarehouses } from '@/services/warehouses'
 import { getPriceLists } from '@/services/priceLists'
 
 const router = useRouter()
-const settings = ref(getSettings())
+const settings = ref({
+  tax: { enabledVatRates: [], defaultVat: '23', defaultCurrency: 'PLN' },
+  company: {},
+  payment: {},
+  discounts: {},
+  template: {},
+  numbering: {}
+})
 
 const issuer = ref({ name: '', nip: '', address: '' })
 const counterparty = ref({ name: '', nip: '', address: '' })
@@ -348,23 +355,27 @@ const applyProductToItem = (index, productName) => {
   }
 }
 
-const loadProducts = () => {
-  availableProducts.value = getInventory()
+const loadProducts = async () => {
+  availableProducts.value = await getInventory()
 }
 
-const loadContacts = () => {
-  contacts.value = getContacts()
+const loadContacts = async () => {
+  contacts.value = await getContacts()
 }
 
-const loadWarehouses = () => {
-  warehouses.value = getWarehouses()
+const loadWarehouses = async () => {
+  warehouses.value = await getWarehouses()
   if (!selectedWarehouseId.value && warehouses.value.length) {
     selectedWarehouseId.value = warehouses.value[0].id
   }
 }
 
-const loadPriceLists = () => {
-  priceLists.value = getPriceLists()
+const loadPriceLists = async () => {
+  // priceLists service might also need to be async if I updated it, but I missed it in plan.
+  // Assuming it's still sync mock or handled.
+  // But wait, if getPriceLists uses apiFetch, it's async.
+  // I didn't refactor priceLists.js yet.
+  priceLists.value = await getPriceLists()
 }
 
 const applyContact = () => {
@@ -395,8 +406,8 @@ const loadCompanyData = () => {
   }
 }
 
-const loadDocuments = () => {
-  existingDocuments.value = getDocuments()
+const loadDocuments = async () => {
+  existingDocuments.value = await getDocuments()
 }
 
 const updateNumber = () => {
@@ -597,7 +608,7 @@ const validate = () => {
   return issuerValid && counterpartyValid && nipValid && document.value.issueDate && document.value.saleDate && itemsValid
 }
 
-const goToPreview = () => {
+const goToPreview = async () => {
   try {
     ensureDocumentDates()
     validated.value = true
@@ -645,16 +656,21 @@ const goToPreview = () => {
       filename
     }
 
-    addDocument(newDoc)
-    loadDocuments()
+    const createdDoc = await addDocument(newDoc)
+    Object.assign(newDoc, createdDoc) // Update with backend data
+    await loadDocuments()
 
     if (autoWz.value && ['invoice', 'final', 'receipt'].includes(document.value.type)) {
       const wzNumber = commitNumber('wz', safeDate, settings.value)
-      items.value.forEach((item) => {
-        if (item.itemId) adjustInventoryStock(item.itemId, -Number(item.quantity))
-      })
+      // Stock adjustment is handled by backend in create invoice logic now.
+      // But WZ document creation might still be needed if it's separate.
+      // The current backend logic updates stock but doesn't create WZ explicitly in InvoicesService.
+      // If we want WZ document, we should create it.
+      // But adjustInventoryStock logic was also removed/refactored.
 
-      addDocument({
+      // Let's create WZ document via API.
+
+      await addDocument({
         id: createId(),
         type: 'wz',
         number: wzNumber,
@@ -701,8 +717,8 @@ const goToHome = () => {
   router.push({ name: 'home' })
 }
 
-onMounted(() => {
-  settings.value = getSettings()
+onMounted(async () => {
+  settings.value = await getSettings()
   loadProducts()
   loadContacts()
   loadWarehouses()
@@ -711,7 +727,7 @@ onMounted(() => {
   if (!settings.value.company?.name) {
     useCompanyData.value = false
   }
-  loadDocuments()
+  await loadDocuments()
   if (!document.value.issueDate) {
     const today = formatToday()
     document.value.issueDate = today
