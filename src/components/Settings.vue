@@ -372,8 +372,8 @@ const roleLabel = (role) => roleLabels[role] ?? role
 const thresholdForm = reactive({ minNetto: 0, percent: 0 })
 const couponForm = reactive({ code: '', percent: 0 })
 
-const loadSettings = () => {
-  const parsed = getSettings()
+const loadSettings = async () => {
+  const parsed = await getSettings()
   Object.assign(settings.company, parsed.company ?? {})
   Object.assign(settings.template, parsed.template ?? {})
   Object.assign(settings.numbering, parsed.numbering ?? {})
@@ -389,8 +389,8 @@ const loadSettings = () => {
   ensureDefaults()
 }
 
-const loadUsers = () => {
-  users.value = getUsers()
+const loadUsers = async () => {
+  users.value = await getUsers()
 }
 
 const ensureDefaults = () => {

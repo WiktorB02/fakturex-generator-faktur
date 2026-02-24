@@ -557,11 +557,11 @@ const batchItems = computed(() => {
   return inventory.value.filter((item) => item.warehouseId === batchForm.value.warehouseId)
 })
 
-const loadData = () => {
-  inventory.value = getInventory()
-  contacts.value = getContacts()
-  warehouses.value = getWarehouses()
-  reservations.value = getReservations()
+const loadData = async () => {
+  inventory.value = await getInventory()
+  contacts.value = await getContacts()
+  warehouses.value = await getWarehouses()
+  reservations.value = getReservations() // Reservations service refactored? Not yet.
   if (!itemForm.value.warehouseId && warehouses.value.length) {
     itemForm.value.warehouseId = warehouses.value[0].id
   }
@@ -596,16 +596,16 @@ const resetItemForm = () => {
   }
 }
 
-const saveItem = () => {
+const saveItem = async () => {
   if (!itemForm.value.name.trim()) {
     alert('Nazwa towaru jest wymagana.')
     return
   }
 
   if (editingId.value) {
-    inventory.value = updateInventoryItem(editingId.value, { ...itemForm.value })
+    inventory.value = await updateInventoryItem(editingId.value, { ...itemForm.value })
   } else {
-    inventory.value = addInventoryItem({ ...itemForm.value })
+    inventory.value = await addInventoryItem({ ...itemForm.value })
   }
 
   showItemForm.value = false
@@ -619,8 +619,8 @@ const editItem = (item) => {
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-const deleteItem = (id) => {
-  inventory.value = removeInventoryItem(id)
+const deleteItem = async (id) => {
+  inventory.value = await removeInventoryItem(id)
 }
 
 const warehouseName = (id) => warehouses.value.find((warehouse) => warehouse.id === id)?.name || '-'
