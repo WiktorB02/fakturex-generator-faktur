@@ -126,7 +126,7 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* Sidebar Styles - extracted from Index.css */
+/* Sidebar Styles - extracted from dashboard.css */
 .sidebar {
   width: 260px;
   background-color: var(--app-surface);

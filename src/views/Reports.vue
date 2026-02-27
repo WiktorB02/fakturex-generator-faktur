@@ -127,7 +127,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getDocuments } from '@/services/documents'
 import { getSettings } from '@/services/settings'
-import { exportCsv } from '@/services/csv'
+import { exportCsv } from '@/utils/csv'
 
 const router = useRouter()
 const settings = ref(getSettings())

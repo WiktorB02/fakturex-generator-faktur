@@ -11,7 +11,7 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import MainLayout from '@/components/layout/MainLayout.vue'
+import MainLayout from '@/layouts/MainLayout.vue'
 import ToastManager from '@/components/ui/ToastManager.vue'
 
 const route = useRoute()

@@ -210,4 +210,4 @@ onBeforeUnmount(() => {
 })
 </script>
 
-<style src="./Index.css"></style>
+<style src="@/assets/css/dashboard.css"></style>
