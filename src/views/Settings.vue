@@ -32,6 +32,56 @@
 
       <!-- Settings Content -->
       <div class="settings-content">
+        <!-- Appearance & Personalization -->
+        <section v-if="activeSection === 'appearance'" class="card">
+          <div class="card-header">
+            <h3>Wygląd i personalizacja</h3>
+          </div>
+
+          <div class="form-group mb-lg">
+            <label class="form-label">Motyw główny (Dark Mode)</label>
+            <div class="theme-toggle-group">
+              <button
+                class="btn"
+                :class="isDarkMode ? 'btn-ghost' : 'btn-primary'"
+                @click="setDarkMode(false)"
+              >
+                <i class="fa fa-sun-o"></i> Jasny
+              </button>
+              <button
+                class="btn"
+                :class="isDarkMode ? 'btn-primary' : 'btn-ghost'"
+                @click="setDarkMode(true)"
+              >
+                <i class="fa fa-moon-o"></i> Ciemny
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group mb-lg">
+            <label class="form-label">Kolor wiodący</label>
+            <div class="color-swatches">
+              <button
+                v-for="color in colorOptions"
+                :key="color.value"
+                class="swatch"
+                :class="[color.bgClass, { active: currentColor === color.value }]"
+                @click="setColorTheme(color.value)"
+                :title="color.label"
+              ></button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Gęstość interfejsu</label>
+            <select v-model="currentDensity" @change="setDensity(currentDensity)" class="form-control w-auto">
+              <option value="compact">Kompaktowy</option>
+              <option value="comfortable">Wygodny (Domyślny)</option>
+              <option value="spacious">Przestronny</option>
+            </select>
+          </div>
+        </section>
+
         <!-- Company -->
         <section v-if="activeSection === 'company'" class="card">
           <div class="card-header">
@@ -290,14 +340,32 @@
 import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue'
 import { defaultSettings, getSettings, saveSettings as saveSettingsToStore } from '@/services/settings'
 import { getUsers, updateUserRole } from '@/services/auth'
+import { themePreferences, setDarkMode, setColorTheme, setDensity } from '@/services/theme'
 
-const activeSection = ref('company')
+const activeSection = ref('appearance')
 const users = ref([])
 let saveTimer = null
 
+const colorOptions = [
+  { label: 'Indygo (Domyślny)', value: 'indigo', bgClass: 'bg-indigo' },
+  { label: 'Szmaragdowy', value: 'emerald', bgClass: 'bg-emerald' },
+  { label: 'Różany', value: 'rose', bgClass: 'bg-rose' },
+  { label: 'Fioletowy', value: 'violet', bgClass: 'bg-violet' }
+]
+
+const isDarkMode = computed(() => themePreferences.value.isDarkMode)
+const currentColor = computed(() => themePreferences.value.colorTheme)
+const currentDensity = ref(themePreferences.value.density)
+
+// Update density select whenever themePreferences changes globally
+watch(() => themePreferences.value.density, (newVal) => {
+  currentDensity.value = newVal
+})
+
 const sections = [
+  { id: 'appearance', label: 'Wygląd', icon: 'fa fa-paint-brush' },
   { id: 'company', label: 'Dane firmy', icon: 'fa fa-building' },
-  { id: 'branding', label: 'Branding', icon: 'fa fa-paint-brush' },
+  { id: 'branding', label: 'Szablon PDF', icon: 'fa fa-file-pdf-o' },
   { id: 'discounts', label: 'Rabaty', icon: 'fa fa-percent' },
   { id: 'numbering', label: 'Numeracja', icon: 'fa fa-list-ol' },
   { id: 'tax', label: 'Podatki i waluty', icon: 'fa fa-money' },
@@ -692,6 +760,47 @@ watch(settings, autoSave, { deep: true })
 .mt-md { margin-top: var(--spacing-md); }
 .mb-sm { margin-bottom: var(--spacing-sm); }
 .mb-lg { margin-bottom: var(--spacing-lg); }
+
+.theme-toggle-group {
+  display: inline-flex;
+  gap: var(--spacing-sm);
+  background: var(--secondary-100);
+  padding: 4px;
+  border-radius: var(--radius-full);
+}
+
+.theme-toggle-group .btn {
+  border-radius: var(--radius-full);
+}
+
+.color-swatches {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform var(--transition-bounce), border-color var(--transition-fast);
+}
+
+.swatch:hover {
+  transform: scale(1.1);
+}
+
+.swatch.active {
+  border-color: var(--app-text);
+  transform: scale(1.15);
+  box-shadow: var(--shadow-md);
+}
+
+.bg-indigo { background-color: #6366f1; }
+.bg-emerald { background-color: #10b981; }
+.bg-rose { background-color: #f43f5e; }
+.bg-violet { background-color: #8b5cf6; }
 
 @media (max-width: 768px) {
   .settings-layout {

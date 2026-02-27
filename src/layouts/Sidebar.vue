@@ -144,7 +144,7 @@ onBeforeUnmount(() => {
 }
 
 .sidebar-header {
-  height: 64px;
+  height: 72px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -161,21 +161,23 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  font-weight: var(--font-bold);
+  font-weight: var(--font-extrabold);
   font-size: var(--text-xl);
-  color: var(--primary-600);
+  color: var(--app-text);
+  letter-spacing: -0.02em;
 }
 
 .logo-icon {
   width: 32px;
   height: 32px;
-  background: var(--primary-600);
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-700));
   color: white;
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: var(--text-lg);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
 }
 
 .logo-text {
