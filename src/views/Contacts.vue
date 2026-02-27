@@ -159,7 +159,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { addContact, getContacts, removeContact, updateContact } from '@/services/contacts'
-import { exportCsv, parseCsv } from '@/services/csv'
+import { exportCsv, parseCsv } from '@/utils/csv'
 import { getPriceLists } from '@/services/priceLists'
 
 const router = useRouter()

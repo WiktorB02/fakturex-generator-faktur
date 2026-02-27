@@ -39,7 +39,7 @@ npm run prisma:migrate -- --name init
 npm run start:dev
 ```
 
-Backend domyślnie startuje na porcie `3002` (ustawiane przez `PORT`).
+Backend domyślnie startuje na porcie `3001` (ustawiane przez `PORT`).
 
 ### 3) Frontend
 ```bash
@@ -48,16 +48,16 @@ npm install
 npm run dev
 ```
 
-Frontend: http://127.0.0.1:5174/
+Frontend: http://localhost:5173/
 
 ## Konfiguracja środowiska
 Pliki:
-- [backend/.env](backend/.env)
-- [.env](.env)
+- `backend/.env` (skopiuj z `backend/.env.example`)
+- `.env` (skopiuj z `.env.example`)
 
 Przykład:
 ```
-VITE_API_URL=http://localhost:3002
+VITE_API_URL=http://localhost:3001
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/fakturex?schema=public
 ```
 
@@ -68,8 +68,23 @@ Zarejestrowane konta demo (backend):
 - podglad@fakturex.pl / demo123
 
 ## Struktura
-- [src/](src/) – frontend
-- [backend/](backend/) – backend API
+```
+/
+├── backend/               # Backend API (NestJS)
+│   ├── src/               # Kod źródłowy API (Moduły, Kontrolery, Serwisy)
+│   ├── prisma/            # Schematy i migracje bazy danych
+│   └── .env.example       # Przykładowe zmienne środowiskowe backendu
+├── src/                   # Frontend (Vue 3)
+│   ├── assets/            # Zasoby statyczne (obrazki, CSS)
+│   ├── components/        # Komponenty wielokrotnego użytku (UI, generyczne)
+│   ├── layouts/           # Główne szablony układu (MainLayout, Sidebar, itp.)
+│   ├── router/            # Konfiguracja tras aplikacji
+│   ├── services/          # Połączenia z API i logika biznesowa
+│   ├── utils/             # Funkcje pomocnicze
+│   └── views/             # Komponenty stron (Dashboard, Settings, itp.)
+├── .env.example           # Przykładowe zmienne środowiskowe frontendu
+└── package.json           # Zależności projektu
+```
 
 ## Licencja
 MIT

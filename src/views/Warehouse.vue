@@ -457,7 +457,7 @@ import { getContacts } from '@/services/contacts'
 import { addInventoryItem, getInventory, removeInventoryItem, updateInventoryItem } from '@/services/inventory'
 import { addDocument, commitNumber } from '@/services/documents'
 import { getSettings } from '@/services/settings'
-import { exportCsv, parseCsv } from '@/services/csv'
+import { exportCsv, parseCsv } from '@/utils/csv'
 import { addWarehouse, getWarehouses, removeWarehouse, updateWarehouse } from '@/services/warehouses'
 import { addReservation, getReservations, removeReservation, updateReservation } from '@/services/reservations'
 
