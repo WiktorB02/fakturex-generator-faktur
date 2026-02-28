@@ -189,9 +189,13 @@ onBeforeUnmount(() => {
   font-size: var(--text-lg);
 }
 
-.sidebar.sidebar-collapsed .logo-text,
-.sidebar.sidebar-collapsed .collapse-btn {
+.sidebar.sidebar-collapsed .logo-container {
   display: none;
+}
+
+.sidebar.sidebar-collapsed .collapse-btn {
+  display: block;
+  margin: 0 auto;
 }
 
 .sidebar-nav {
