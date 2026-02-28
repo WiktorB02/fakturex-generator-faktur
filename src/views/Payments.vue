@@ -99,12 +99,12 @@
               </td>
               <td class="text-right actions-cell">
                 <button
-                  class="btn-icon"
-                  :class="doc.document?.paymentStatus === 'paid' ? 'success' : 'warning'"
+                  class="btn-icon status-toggle"
+                  :class="{ 'is-completed': doc.document?.paymentStatus === 'paid' }"
                   @click="togglePaid(doc)"
                   :title="doc.document?.paymentStatus === 'paid' ? 'Oznacz jako nieopłacone' : 'Oznacz jako opłacone'"
                 >
-                  <i class="fa" :class="doc.document?.paymentStatus === 'paid' ? 'fa-check-circle' : 'fa-circle-o'"></i>
+                  <i class="fa" :class="doc.document?.paymentStatus === 'paid' ? 'fa-toggle-on' : 'fa-toggle-off'"></i>
                 </button>
                 <button class="btn-icon" @click="openPreview(doc)" title="Podgląd">
                   <i class="fa fa-eye"></i>
@@ -349,12 +349,24 @@ onMounted(loadDocuments)
   color: var(--primary-600);
 }
 
-.btn-icon.success {
-  color: var(--success);
-  background: var(--success-light);
-  border-color: color-mix(in srgb, var(--success) 30%, transparent);
+.btn-icon.status-toggle {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 28%, transparent);
+  background: color-mix(in srgb, var(--warning-light) 70%, transparent);
 }
-.btn-icon.success:hover {
+
+.btn-icon.status-toggle:hover {
+  background: color-mix(in srgb, var(--warning-light) 78%, var(--warning));
+  color: #fff;
+}
+
+.btn-icon.status-toggle.is-completed {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 30%, transparent);
+  background: color-mix(in srgb, var(--success-light) 72%, transparent);
+}
+
+.btn-icon.status-toggle.is-completed:hover {
   background: color-mix(in srgb, var(--success-light) 75%, var(--success));
   color: #fff;
 }

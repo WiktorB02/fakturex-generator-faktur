@@ -252,8 +252,13 @@
                   </span>
                 </td>
                 <td class="text-right actions-cell">
-                  <button class="btn btn-sm btn-secondary" @click="toggleHandled(doc)">
-                    {{ doc.document?.completed ? 'Cofnij' : 'Oznacz' }}
+                  <button
+                    class="btn-icon"
+                    :class="doc.document?.completed ? 'warning' : 'success'"
+                    :title="doc.document?.completed ? 'Cofnij oznaczenie' : 'Oznacz jako ogarnięte'"
+                    @click="toggleHandled(doc)"
+                  >
+                    <i :class="doc.document?.completed ? 'fa fa-rotate-left' : 'fa fa-check'"></i>
                   </button>
                 </td>
               </tr>
@@ -1185,6 +1190,28 @@ const createMovement = () => {
 .btn-icon.danger:hover {
   background: var(--danger-light);
   color: var(--danger);
+}
+
+.btn-icon.success {
+  color: var(--success);
+  background: var(--success-light);
+  border-color: color-mix(in srgb, var(--success) 30%, transparent);
+}
+
+.btn-icon.success:hover {
+  background: color-mix(in srgb, var(--success-light) 75%, var(--success));
+  color: #fff;
+}
+
+.btn-icon.warning {
+  color: var(--warning);
+  background: var(--warning-light);
+  border-color: color-mix(in srgb, var(--warning) 30%, transparent);
+}
+
+.btn-icon.warning:hover {
+  background: color-mix(in srgb, var(--warning-light) 75%, var(--warning));
+  color: #fff;
 }
 
 .empty-state {

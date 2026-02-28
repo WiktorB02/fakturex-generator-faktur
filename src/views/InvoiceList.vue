@@ -83,6 +83,15 @@
                 </span>
               </td>
               <td class="text-right actions-cell">
+                <button
+                  v-if="isWarehouseDoc(doc)"
+                  class="btn-icon status-toggle"
+                  :class="{ 'is-completed': doc.document?.completed }"
+                  @click="toggleHandled(doc)"
+                  :title="doc.document?.completed ? 'Oznacz jako nieogarnięte' : 'Oznacz jako ogarnięte'"
+                >
+                  <i class="fa" :class="doc.document?.completed ? 'fa-toggle-on' : 'fa-toggle-off'"></i>
+                </button>
                 <button class="btn-icon" @click="viewDocument(doc)" title="Podgląd">
                   <i class="fa fa-eye"></i>
                 </button>
@@ -115,7 +124,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { clearDocuments, getDocuments, removeDocument } from '@/services/documents'
+import { clearDocuments, getDocuments, removeDocument, updateDocument } from '@/services/documents'
 import { useToast } from '@/services/toast'
 
 const router = useRouter()
@@ -143,15 +152,19 @@ const typeLabels = {
   expense: 'Wydatek'
 }
 
-const getShortType = (type) => typeLabels[type] || type.toUpperCase()
+const getShortType = (type) => typeLabels[String(type || '').toLowerCase()] || String(type || '').toUpperCase()
 
 const salesTypes = ['invoice', 'proforma', 'advance', 'final', 'correction', 'receipt']
+const warehouseTypes = ['pz', 'wz', 'rw', 'mm', 'inw']
+
+const getDocType = (doc) => String(doc?.type || '').toLowerCase()
+const isWarehouseDoc = (doc) => warehouseTypes.includes(getDocType(doc))
 
 const filteredDocuments = computed(() => {
   let base = documents.value
-  if (filter.value === 'sales') base = base.filter((doc) => salesTypes.includes(doc.type))
-  if (filter.value === 'warehouse') base = base.filter((doc) => ['pz', 'wz', 'rw', 'mm', 'inw'].includes(doc.type))
-  if (filter.value === 'expense') base = base.filter((doc) => doc.type === 'expense')
+  if (filter.value === 'sales') base = base.filter((doc) => salesTypes.includes(getDocType(doc)))
+  if (filter.value === 'warehouse') base = base.filter((doc) => warehouseTypes.includes(getDocType(doc)))
+  if (filter.value === 'expense') base = base.filter((doc) => getDocType(doc) === 'expense')
 
   if (!query.value) return base
   const term = query.value.toLowerCase()
@@ -171,15 +184,26 @@ const isOverdue = (doc) => {
 }
 
 const getStatusClass = (doc) => {
+  if (isWarehouseDoc(doc)) {
+    return doc.document?.completed ? 'badge-success' : 'badge-warning'
+  }
   if (doc.document?.paymentStatus === 'paid') return 'badge-success'
   if (isOverdue(doc)) return 'badge-danger'
   return 'badge-warning'
 }
 
 const getStatusLabel = (doc) => {
+  if (isWarehouseDoc(doc)) {
+    return doc.document?.completed ? 'Ogarnięte' : 'Do ogarnięcia'
+  }
   if (doc.document?.paymentStatus === 'paid') return 'Opłacona'
   if (isOverdue(doc)) return 'Po terminie'
   return 'Oczekuje'
+}
+
+const toggleHandled = (doc) => {
+  const updatedDocs = updateDocument(doc.id, { document: { completed: !doc.document?.completed } })
+  documents.value = updatedDocs
 }
 
 const loadDocuments = () => {
@@ -353,6 +377,28 @@ watch(
 .btn-icon.danger:hover {
   background: var(--danger-light);
   color: var(--danger);
+}
+
+.btn-icon.status-toggle {
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 28%, transparent);
+  background: color-mix(in srgb, var(--warning-light) 70%, transparent);
+}
+
+.btn-icon.status-toggle:hover {
+  background: color-mix(in srgb, var(--warning-light) 78%, var(--warning));
+  color: #fff;
+}
+
+.btn-icon.status-toggle.is-completed {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 30%, transparent);
+  background: color-mix(in srgb, var(--success-light) 72%, transparent);
+}
+
+.btn-icon.status-toggle.is-completed:hover {
+  background: color-mix(in srgb, var(--success-light) 75%, var(--success));
+  color: #fff;
 }
 
 .empty-state {

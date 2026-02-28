@@ -209,32 +209,61 @@ onMounted(() => {
   color: var(--app-text);
 }
 
+.toolbar-center h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--app-text);
+}
+
 .preview-container {
   background: var(--app-surface-elevated);
   border: 1px solid var(--app-border);
-  padding: 0;
+  padding: var(--spacing-sm);
   box-shadow: var(--shadow-xl);
   border-radius: var(--radius-lg);
   overflow: hidden;
 }
 
 .a4-page {
+  --doc-primary: #1d4ed8;
+  --doc-text: #0f172a;
+  --doc-muted: #475569;
+  --doc-soft: #f1f5f9;
+  --doc-line: #cbd5e1;
+
   width: 210mm;
   min-height: 297mm;
   padding: 20mm;
   background: white;
-  color: var(--secondary-900);
+  color: var(--doc-text);
   font-size: 10pt;
   position: relative;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+:global(.dark) .preview-page {
+  background: color-mix(in srgb, var(--app-bg) 86%, #000);
+}
+
+:global(.dark) .preview-container {
+  background: color-mix(in srgb, var(--app-surface-elevated) 72%, #0b1220);
+  border-color: color-mix(in srgb, var(--app-border) 65%, #94a3b8);
+  box-shadow: 0 24px 56px rgba(2, 6, 23, 0.7);
+}
+
+:global(.dark) .a4-page {
+  box-shadow:
+    0 0 0 1px rgba(148, 163, 184, 0.55),
+    0 18px 36px rgba(2, 6, 23, 0.35);
 }
 
 /* Header */
 .doc-header {
   display: flex;
   justify-content: space-between;
-  border-bottom: 2px solid var(--primary-600);
+  border-bottom: 2px solid var(--doc-primary);
   padding-bottom: 20px;
   margin-bottom: 30px;
 }
@@ -242,12 +271,12 @@ onMounted(() => {
 .company-name {
   font-size: 18pt;
   font-weight: bold;
-  color: var(--primary-600);
+  color: var(--doc-primary);
   margin: 0 0 5px 0;
 }
 
 .company-details {
-  color: var(--secondary-600);
+  color: var(--doc-muted);
   line-height: 1.4;
 }
 
@@ -258,14 +287,14 @@ onMounted(() => {
 .doc-title {
   font-size: 16pt;
   font-weight: bold;
-  color: var(--secondary-900);
+  color: var(--doc-text);
   margin: 0;
   text-transform: uppercase;
 }
 
 .doc-number {
   font-size: 12pt;
-  color: var(--secondary-600);
+  color: var(--doc-muted);
   margin: 5px 0 15px 0;
 }
 
@@ -296,9 +325,9 @@ onMounted(() => {
 .party-box h3 {
   font-size: 9pt;
   text-transform: uppercase;
-  color: var(--secondary-500);
+  color: var(--doc-muted);
   margin-bottom: 10px;
-  border-bottom: 1px solid var(--secondary-200);
+  border-bottom: 1px solid var(--doc-line);
   padding-bottom: 5px;
 }
 
@@ -319,23 +348,23 @@ onMounted(() => {
 }
 
 .doc-table th {
-  background: var(--secondary-50);
+  background: var(--doc-soft);
   padding: 8px;
   text-align: left;
   font-weight: bold;
   font-size: 9pt;
-  border-bottom: 1px solid var(--secondary-200);
+  border-bottom: 1px solid var(--doc-line);
 }
 
 .doc-table td {
   padding: 8px;
-  border-bottom: 1px solid var(--secondary-100);
+  border-bottom: 1px solid #e2e8f0;
   vertical-align: top;
 }
 
 .text-right { text-align: right; }
 
-.col-idx { width: 40px; color: var(--secondary-500); }
+.col-idx { width: 40px; color: var(--doc-muted); }
 .col-qty { width: 80px; }
 .col-unit { width: 50px; }
 .col-price { width: 100px; }
@@ -378,7 +407,7 @@ onMounted(() => {
 
 .doc-notes p {
   font-size: 9pt;
-  color: var(--secondary-600);
+  color: var(--doc-muted);
   font-style: italic;
 }
 
@@ -390,33 +419,33 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   padding: 5px 0;
-  border-bottom: 1px solid var(--secondary-200);
+  border-bottom: 1px solid var(--doc-line);
 }
 
 .total-row.grand-total {
-  border-top: 2px solid var(--secondary-200);
+  border-top: 2px solid var(--doc-line);
   border-bottom: none;
   font-size: 14pt;
   font-weight: bold;
   margin-top: 10px;
   padding-top: 10px;
-  color: var(--primary-600);
+  color: var(--doc-primary);
 }
 
 /* Footer */
 .doc-footer {
   margin-top: 50px;
   padding-top: 10px;
-  border-top: 1px solid var(--secondary-200);
+  border-top: 1px solid var(--doc-line);
   text-align: center;
-  color: var(--secondary-400);
+  color: var(--doc-muted);
   font-size: 8pt;
 }
 
 @media print {
   .no-print { display: none !important; }
   .preview-page { background: white; padding: 0; }
-  .preview-container { box-shadow: none; }
+  .preview-container { box-shadow: none; padding: 0; border: none; }
   .a4-page { width: 100%; min-height: 0; padding: 0; }
   @page { margin: 15mm; }
 }
