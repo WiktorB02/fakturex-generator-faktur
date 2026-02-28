@@ -113,10 +113,10 @@ html.dark-mode {
   --glass-border: rgba(255, 255, 255, 0.05);
   --shadow-color: rgb(0 0 0 / 0.6);
 
-  --success-light: rgba(16, 185, 129, 0.2);
-  --warning-light: rgba(245, 158, 11, 0.2);
-  --danger-light: rgba(239, 68, 68, 0.2);
-  --info-light: rgba(59, 130, 246, 0.2);
+  --success-light: rgba(16, 185, 129, 0.15);
+  --warning-light: rgba(245, 158, 11, 0.15);
+  --danger-light: rgba(239, 68, 68, 0.15);
+  --info-light: rgba(59, 130, 246, 0.15);
 }
 
 /* --- Color Themes --- */
