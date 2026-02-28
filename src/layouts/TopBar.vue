@@ -75,8 +75,13 @@ const goToSettings = () => {
   flex-shrink: 0;
   border-radius: var(--radius-lg);
   margin: var(--spacing-md) var(--spacing-lg) 0 var(--spacing-lg); /* floating effect */
-  border: 1px solid var(--app-border);
+  border: 1px solid var(--glass-border);
   z-index: 10;
+  background: var(--app-overlay);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-sm);
+  transition: background-color var(--transition-normal);
 }
 
 .top-bar-left {

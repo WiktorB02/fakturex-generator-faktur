@@ -36,7 +36,8 @@
       <div class="form-grid">
         <div class="form-group">
           <label class="form-label">Nazwa *</label>
-          <input v-model.trim="form.name" type="text" class="form-control" />
+          <input v-model.trim="form.name" type="text" class="form-control" :class="{ 'is-invalid': errors.name }" />
+          <span v-if="errors.name" class="form-error">{{ errors.name }}</span>
         </div>
 
         <div class="form-group">
@@ -97,10 +98,24 @@
       </div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div v-if="showDeleteModal" class="modal-overlay">
+      <div class="modal-content card">
+        <h3>Usuń kontrahenta</h3>
+        <p>Czy na pewno chcesz usunąć tego kontrahenta? Tej operacji nie można cofnąć.</p>
+        <div class="modal-actions">
+          <button class="btn btn-ghost" @click="showDeleteModal = false">Anuluj</button>
+          <button class="btn btn-danger" @click="handleDelete">
+            <i class="fa fa-trash"></i> Usuń
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Contacts Table -->
     <div class="card table-card">
       <div class="table-responsive">
-        <table v-if="filteredContacts.length" class="table">
+        <table v-if="filteredContacts.length || isLoading" class="table">
           <thead>
             <tr>
               <th>Nazwa</th>
@@ -113,34 +128,47 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="contact in filteredContacts" :key="contact.id">
-              <td class="font-medium">{{ contact.name }}</td>
-              <td>
-                <span class="badge badge-secondary">{{ typeLabels[contact.type] }}</span>
-              </td>
-              <td>{{ contact.nip || '-' }}</td>
-              <td>{{ getPriceListName(contact.priceListId) }}</td>
-              <td>
-                <div class="contact-details">
-                  <div v-if="contact.phone"><i class="fa fa-phone"></i> {{ contact.phone }}</div>
-                  <div v-if="contact.email"><i class="fa fa-envelope"></i> {{ contact.email }}</div>
-                  <div v-if="!contact.phone && !contact.email">-</div>
-                </div>
-              </td>
-              <td>{{ contact.address || '-' }}</td>
-              <td class="text-right actions-cell">
-                <button class="btn-icon" @click="editContact(contact)" title="Edytuj">
-                  <i class="fa fa-pencil"></i>
-                </button>
-                <button class="btn-icon danger" @click="handleDelete(contact.id)" title="Usuń">
-                  <i class="fa fa-trash"></i>
-                </button>
-              </td>
-            </tr>
+            <template v-if="isLoading">
+              <tr v-for="i in 5" :key="i">
+                <td><div class="skeleton skeleton-text medium"></div></td>
+                <td><div class="skeleton skeleton-text short"></div></td>
+                <td><div class="skeleton skeleton-text short"></div></td>
+                <td><div class="skeleton skeleton-text short"></div></td>
+                <td><div class="skeleton skeleton-text medium"></div></td>
+                <td><div class="skeleton skeleton-text medium"></div></td>
+                <td class="text-right actions-cell"><div class="skeleton skeleton-text short" style="display:inline-block; width:30px;"></div></td>
+              </tr>
+            </template>
+            <template v-else>
+              <tr v-for="contact in filteredContacts" :key="contact.id">
+                <td class="font-medium">{{ contact.name }}</td>
+                <td>
+                  <span class="badge badge-secondary">{{ typeLabels[contact.type] }}</span>
+                </td>
+                <td>{{ contact.nip || '-' }}</td>
+                <td>{{ getPriceListName(contact.priceListId) }}</td>
+                <td>
+                  <div class="contact-details">
+                    <div v-if="contact.phone"><i class="fa fa-phone"></i> {{ contact.phone }}</div>
+                    <div v-if="contact.email"><i class="fa fa-envelope"></i> {{ contact.email }}</div>
+                    <div v-if="!contact.phone && !contact.email">-</div>
+                  </div>
+                </td>
+                <td>{{ contact.address || '-' }}</td>
+                <td class="text-right actions-cell">
+                  <button class="btn-icon" @click="editContact(contact)" title="Edytuj">
+                    <i class="fa fa-pencil"></i>
+                  </button>
+                  <button class="btn-icon danger" @click="confirmDelete(contact.id)" title="Usuń">
+                    <i class="fa fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+            </template>
           </tbody>
         </table>
 
-        <div v-else class="empty-state">
+        <div v-else-if="!isLoading" class="empty-state">
           <div class="empty-icon">
             <i class="fa fa-address-book-o"></i>
           </div>
@@ -156,13 +184,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { addContact, getContacts, removeContact, updateContact } from '@/services/contacts'
 import { exportCsv, parseCsv } from '@/utils/csv'
 import { getPriceLists } from '@/services/priceLists'
+import { useToast } from '@/services/toast'
 
 const router = useRouter()
+const toast = useToast()
 
 const showForm = ref(false)
 const editingId = ref('')
@@ -170,6 +200,11 @@ const contacts = ref([])
 const query = ref('')
 const fileInput = ref(null)
 const priceLists = ref([])
+const isLoading = ref(true)
+const showDeleteModal = ref(false)
+const contactToDelete = ref(null)
+
+const errors = reactive({ name: '' })
 
 const form = ref({
   name: '',
@@ -216,6 +251,7 @@ const closeForm = () => {
 
 const resetForm = () => {
   editingId.value = ''
+  errors.name = ''
   form.value = {
     name: '',
     nip: '',
@@ -230,15 +266,19 @@ const resetForm = () => {
 }
 
 const saveContact = () => {
+  errors.name = ''
   if (!form.value.name.trim()) {
-    alert('Nazwa kontrahenta jest wymagana.')
+    errors.name = 'Nazwa kontrahenta jest wymagana.'
+    toast.error('Uzupełnij wymagane pola formularza.')
     return
   }
 
   if (editingId.value) {
     contacts.value = updateContact(editingId.value, { ...form.value })
+    toast.success('Zaktualizowano kontrahenta.')
   } else {
     contacts.value = addContact({ ...form.value })
+    toast.success('Dodano nowego kontrahenta.')
   }
 
   closeForm()
@@ -254,10 +294,18 @@ const editContact = (contact) => {
   }, 100)
 }
 
-const handleDelete = (id) => {
-  if (confirm('Czy na pewno chcesz usunąć tego kontrahenta?')) {
-    contacts.value = removeContact(id)
+const confirmDelete = (id) => {
+  contactToDelete.value = id
+  showDeleteModal.value = true
+}
+
+const handleDelete = () => {
+  if (contactToDelete.value) {
+    contacts.value = removeContact(contactToDelete.value)
+    toast.success('Kontrahent został usunięty.')
   }
+  showDeleteModal.value = false
+  contactToDelete.value = null
 }
 
 const getPriceListName = (id) => priceLists.value.find((list) => list.id === id)?.name || 'Domyślny'
@@ -310,10 +358,48 @@ const handleImport = async (event) => {
   event.target.value = ''
 }
 
-onMounted(loadData)
+onMounted(() => {
+  setTimeout(() => {
+    loadData()
+    isLoading.value = false
+  }, 500)
+})
 </script>
 
 <style scoped>
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-content {
+  max-width: 400px;
+  width: 100%;
+  animation: slideDown 0.3s ease;
+}
+
+.modal-content h3 {
+  margin-bottom: var(--spacing-sm);
+}
+
+.modal-content p {
+  color: var(--secondary-600);
+  margin-bottom: var(--spacing-lg);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+}
+
 .page-content {
   display: flex;
   flex-direction: column;

@@ -210,26 +210,32 @@
 
 /* Promo Card */
 .promo-card {
-  background: linear-gradient(135deg, var(--primary-600), var(--primary-900));
+  background: linear-gradient(135deg, var(--primary-500), var(--primary-800));
   color: white;
   display: flex;
   align-items: center;
   justify-content: space-between;
   border: none;
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 10px 30px -5px rgba(99, 102, 241, 0.3);
   overflow: hidden;
   position: relative;
+  transition: transform var(--transition-bounce), box-shadow var(--transition-bounce);
+}
+
+.promo-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 15px 35px -5px rgba(99, 102, 241, 0.4);
 }
 
 .promo-card::after {
   content: '';
   position: absolute;
-  top: -50%;
-  right: -20%;
-  width: 200px;
-  height: 200px;
-  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  top: -30%;
+  right: -10%;
+  width: 250px;
+  height: 250px;
+  background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
   border-radius: 50%;
 }
 
