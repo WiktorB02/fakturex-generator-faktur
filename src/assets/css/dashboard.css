@@ -139,6 +139,14 @@
   border-bottom: none;
 }
 
+.recent-table .clickable-row {
+  cursor: pointer;
+}
+
+.recent-table .clickable-row:hover td {
+  background: var(--secondary-50);
+}
+
 /* Status Badges */
 .status-badge {
   display: inline-flex;

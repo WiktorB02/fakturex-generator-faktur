@@ -351,16 +351,22 @@ onMounted(loadDocuments)
 
 .btn-icon.success {
   color: var(--success);
+  background: var(--success-light);
+  border-color: color-mix(in srgb, var(--success) 30%, transparent);
 }
 .btn-icon.success:hover {
-  background: var(--success-light);
+  background: color-mix(in srgb, var(--success-light) 75%, var(--success));
+  color: #fff;
 }
 
 .btn-icon.warning {
   color: var(--warning);
+  background: var(--warning-light);
+  border-color: color-mix(in srgb, var(--warning) 30%, transparent);
 }
 .btn-icon.warning:hover {
-  background: var(--warning-light);
+  background: color-mix(in srgb, var(--warning-light) 75%, var(--warning));
+  color: #fff;
 }
 
 .empty-state {

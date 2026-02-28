@@ -12,16 +12,16 @@
     <div class="top-bar-right">
       <div class="search-bar">
         <i class="fa fa-search"></i>
-        <input type="text" placeholder="Szukaj..." />
+        <input v-model.trim="searchTerm" type="text" placeholder="Szukaj dokumentu lub kontrahenta..." @keydown.enter.prevent="runSearch" />
       </div>
 
       <button class="icon-btn theme-toggle-btn" @click="toggleTheme" :title="isDark ? 'Przełącz na jasny' : 'Przełącz na ciemny'">
         <i :class="isDark ? 'fa fa-sun-o' : 'fa fa-moon-o'"></i>
       </button>
 
-      <button class="icon-btn notification-btn">
+      <button class="icon-btn notification-btn" title="Powiadomienia" aria-label="Powiadomienia">
         <i class="fa fa-bell"></i>
-        <span class="badge">2</span>
+        <span class="badge">!</span>
       </button>
 
       <div class="user-avatar" @click="goToSettings" title="Ustawienia">
@@ -32,7 +32,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { themePreferences, toggleDarkMode } from '@/services/theme'
 
@@ -47,6 +47,7 @@ const emit = defineEmits(['toggle-sidebar'])
 const router = useRouter()
 
 const isDark = computed(() => themePreferences.value.isDarkMode)
+const searchTerm = ref('')
 
 const currentDate = computed(() => {
   return new Date().toLocaleDateString('pl-PL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
@@ -62,6 +63,11 @@ const toggleTheme = () => {
 
 const goToSettings = () => {
   router.push({ name: 'settings' })
+}
+
+const runSearch = () => {
+  if (!searchTerm.value) return
+  router.push({ name: 'invoice-list', query: { q: searchTerm.value } })
 }
 </script>
 
@@ -164,8 +170,9 @@ const goToSettings = () => {
   background: var(--danger);
   color: white;
   font-size: 10px;
-  width: 16px;
+  min-width: 16px;
   height: 16px;
+  padding: 0 3px;
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;

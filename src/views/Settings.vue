@@ -6,8 +6,10 @@
       </div>
 
       <div class="action-buttons">
-        <button class="btn btn-primary" @click="saveSettings">
-          <i class="fa fa-save"></i> Zapisz ustawienia
+        <span class="save-status" v-if="lastSavedAt">Zapisano: {{ lastSavedAt }}</span>
+        <button class="btn btn-primary" @click="saveSettings" :disabled="isSaving || isLoading">
+          <i class="fa" :class="isSaving ? 'fa-spinner fa-spin' : 'fa-save'"></i>
+          {{ isSaving ? 'Zapisywanie...' : 'Zapisz ustawienia' }}
         </button>
       </div>
     </div>
@@ -99,11 +101,11 @@
             </div>
             <div class="form-group">
               <label class="form-label">NIP</label>
-              <input v-model.trim="settings.company.nip" type="text" class="form-control" />
+              <input v-model.trim="settings.company.nip" type="text" inputmode="numeric" class="form-control" @input="settings.company.nip = sanitizeDigits(settings.company.nip, 10)" />
             </div>
             <div class="form-group">
               <label class="form-label">REGON</label>
-              <input v-model.trim="settings.company.regon" type="text" class="form-control" />
+              <input v-model.trim="settings.company.regon" type="text" inputmode="numeric" class="form-control" @input="settings.company.regon = sanitizeDigits(settings.company.regon, 14)" />
             </div>
             <div class="form-group">
               <label class="form-label">Ulica i numer</label>
@@ -111,7 +113,7 @@
             </div>
             <div class="form-group">
               <label class="form-label">Kod pocztowy</label>
-              <input v-model.trim="settings.company.postalCode" type="text" class="form-control" />
+              <input v-model.trim="settings.company.postalCode" type="text" inputmode="numeric" class="form-control" @input="settings.company.postalCode = sanitizePostalCode(settings.company.postalCode)" />
             </div>
             <div class="form-group">
               <label class="form-label">Miasto</label>
@@ -123,7 +125,7 @@
             </div>
             <div class="form-group">
               <label class="form-label">Telefon</label>
-              <input v-model.trim="settings.company.phone" type="text" class="form-control" />
+              <input v-model.trim="settings.company.phone" type="text" inputmode="numeric" class="form-control" @input="settings.company.phone = sanitizeDigits(settings.company.phone, 15)" />
             </div>
             <div class="form-group">
               <label class="form-label">E-mail</label>
@@ -351,6 +353,8 @@ import { useToast } from '@/services/toast'
 const activeSection = ref('appearance')
 const users = ref([])
 const isLoading = ref(true)
+const isSaving = ref(false)
+const lastSavedAt = ref('')
 let saveTimer = null
 const toast = useToast()
 
@@ -448,6 +452,45 @@ const roleLabel = (role) => roleLabels[role] ?? role
 const thresholdForm = reactive({ minNetto: 0, percent: 0 })
 const couponForm = reactive({ code: '', percent: 0 })
 
+const sanitizeDigits = (value, maxLen = null) => {
+  const digits = String(value || '').replace(/\D/g, '')
+  return maxLen ? digits.slice(0, maxLen) : digits
+}
+
+const sanitizePostalCode = (value) => {
+  const digits = sanitizeDigits(value, 5)
+  if (digits.length <= 2) return digits
+  return `${digits.slice(0, 2)}-${digits.slice(2)}`
+}
+
+const validateCompanyNumericFields = () => {
+  const nip = sanitizeDigits(settings.company.nip, 10)
+  const regon = sanitizeDigits(settings.company.regon, 14)
+  const phone = sanitizeDigits(settings.company.phone, 15)
+
+  settings.company.nip = nip
+  settings.company.regon = regon
+  settings.company.phone = phone
+  settings.company.postalCode = sanitizePostalCode(settings.company.postalCode)
+
+  if (nip && nip.length !== 10) {
+    toast.error('NIP powinien zawierać dokładnie 10 cyfr.')
+    return false
+  }
+
+  if (regon && ![9, 14].includes(regon.length)) {
+    toast.error('REGON powinien zawierać 9 lub 14 cyfr.')
+    return false
+  }
+
+  if (phone && phone.length < 7) {
+    toast.error('Numer telefonu powinien mieć co najmniej 7 cyfr.')
+    return false
+  }
+
+  return true
+}
+
 const loadSettings = () => {
   const parsed = getSettings()
   Object.assign(settings.company, parsed.company ?? {})
@@ -518,13 +561,18 @@ const removeCoupon = (index) => {
 
 const saveSettings = async () => {
   ensureDefaults()
+  if (!validateCompanyNumericFields()) return
+  isSaving.value = true
   try {
     const payload = JSON.parse(JSON.stringify(toRaw(settings)))
     await saveSettingsToStore(payload)
+    lastSavedAt.value = new Date().toLocaleTimeString('pl-PL')
     toast.success('Ustawienia zapisane!')
     window.dispatchEvent(new Event('permissions-updated'))
   } catch (error) {
     toast.error('Nie udało się zapisać ustawień.')
+  } finally {
+    isSaving.value = false
   }
 }
 
@@ -578,6 +626,17 @@ watch(settings, autoSave, { deep: true })
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.save-status {
+  color: var(--app-muted);
+  font-size: var(--text-xs);
 }
 
 .settings-layout {

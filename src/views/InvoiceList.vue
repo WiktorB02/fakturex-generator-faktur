@@ -86,6 +86,9 @@
                 <button class="btn-icon" @click="viewDocument(doc)" title="Podgląd">
                   <i class="fa fa-eye"></i>
                 </button>
+                <button class="btn-icon" @click="editDocument(doc)" title="Edytuj">
+                  <i class="fa fa-pencil"></i>
+                </button>
                 <button class="btn-icon danger" @click="deleteDocument(doc.id)" title="Usuń">
                   <i class="fa fa-trash"></i>
                 </button>
@@ -110,12 +113,13 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { clearDocuments, getDocuments, removeDocument } from '@/services/documents'
 import { useToast } from '@/services/toast'
 
 const router = useRouter()
+const route = useRoute()
 const toast = useToast()
 const documents = ref([])
 const filter = ref('all')
@@ -180,6 +184,10 @@ const getStatusLabel = (doc) => {
 
 const loadDocuments = () => {
   documents.value = getDocuments()
+  const initialQuery = route.query.q
+  if (typeof initialQuery === 'string') {
+    query.value = initialQuery
+  }
 }
 
 const deleteDocument = (id) => {
@@ -203,6 +211,10 @@ const viewDocument = (doc) => {
   router.push({ path: '/preview', query: { data } })
 }
 
+const editDocument = (doc) => {
+  router.push({ name: 'invoice-form', query: { editId: doc.id } })
+}
+
 const formatDate = (date) => {
   if (!date) return '-'
   const parsed = new Date(date)
@@ -211,6 +223,15 @@ const formatDate = (date) => {
 }
 
 onMounted(loadDocuments)
+
+watch(
+  () => route.query.q,
+  (next) => {
+    if (typeof next === 'string') {
+      query.value = next
+    }
+  }
+)
 </script>
 
 <style scoped>

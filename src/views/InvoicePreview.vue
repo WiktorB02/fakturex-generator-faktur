@@ -191,7 +191,7 @@ onMounted(() => {
 
 <style scoped>
 .preview-page {
-  background: var(--secondary-600);
+  background: var(--app-bg);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -206,13 +206,16 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--spacing-lg);
-  color: white;
+  color: var(--app-text);
 }
 
 .preview-container {
-  background: white;
+  background: var(--app-surface-elevated);
+  border: 1px solid var(--app-border);
   padding: 0;
   box-shadow: var(--shadow-xl);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
 }
 
 .a4-page {
@@ -358,8 +361,9 @@ onMounted(() => {
 
 .status-paid {
   display: inline-block;
-  background: var(--secondary-100);
-  color: var(--secondary-700);
+  background: var(--success-light);
+  color: var(--success);
+  border: 1px solid color-mix(in srgb, var(--success) 30%, transparent);
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 8pt;

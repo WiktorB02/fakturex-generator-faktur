@@ -87,7 +87,7 @@
                 </tr>
               </template>
               <template v-else>
-                <tr v-for="doc in recentDocuments" :key="doc.id">
+                <tr v-for="doc in recentDocuments" :key="doc.id" class="clickable-row" @click="openPreview(doc)">
                   <td class="font-medium">{{ doc.number }}</td>
                   <td>{{ doc.counterparty?.name || '-' }}</td>
                   <td>{{ doc.totals?.brutto }} {{ doc.currency }}</td>
@@ -217,6 +217,10 @@ const goToInvoiceForm = () => router.push({ name: 'invoice-form' })
 const goToContacts = () => router.push({ name: 'contacts' })
 const goToWarehouse = () => router.push({ name: 'warehouse' })
 const goToSettings = () => router.push({ name: 'settings' })
+const openPreview = (doc) => {
+  const data = encodeURIComponent(JSON.stringify(doc))
+  router.push({ path: '/preview', query: { data } })
+}
 
 const loadData = () => {
   documents.value = getDocuments()

@@ -69,14 +69,15 @@ onUnmounted(() => {
   pointer-events: auto;
   min-width: 300px;
   max-width: 400px;
-  background: white;
+  background: var(--app-surface-elevated);
   border-radius: var(--radius-md);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-md);
   padding: 16px;
   display: flex;
   align-items: flex-start;
   gap: 12px;
   border-left: 4px solid var(--primary-500);
+  border: 1px solid var(--app-border);
 }
 
 .toast.success { border-left-color: var(--success); }
@@ -97,7 +98,7 @@ onUnmounted(() => {
 
 .toast-title {
   font-weight: 600;
-  color: var(--secondary-900);
+  color: var(--app-text);
   margin-bottom: 4px;
   font-size: 14px;
 }
@@ -121,7 +122,7 @@ onUnmounted(() => {
 
 .toast-close:hover {
   background: var(--secondary-100);
-  color: var(--secondary-600);
+  color: var(--app-text);
 }
 
 /* Transitions */

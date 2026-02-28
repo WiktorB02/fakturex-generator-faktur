@@ -40,9 +40,9 @@
           <span class="user-role">{{ roleLabels[user.role] }}</span>
         </div>
       </div>
-      <button class="logout-btn" @click="handleLogout" title="Wyloguj">
-        <i class="fa fa-sign-out"></i>
-        <span v-if="!isCollapsed">Wyloguj</span>
+      <button class="logout-btn" @click="handleLogout" title="Wyloguj" :disabled="isLoggingOut">
+        <i class="fa" :class="isLoggingOut ? 'fa-spinner fa-spin' : 'fa-sign-out'"></i>
+        <span v-if="!isCollapsed">{{ isLoggingOut ? 'Wylogowywanie...' : 'Wyloguj' }}</span>
       </button>
     </div>
   </aside>
@@ -53,6 +53,7 @@ import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { getSession, logout } from '@/services/auth'
 import { can, getPermissionsMatrix } from '@/services/permissions'
+import { useToast } from '@/services/toast'
 
 const props = defineProps({
   isCollapsed: Boolean,
@@ -65,6 +66,8 @@ const router = useRouter()
 const route = useRoute()
 const user = ref(getSession()?.user ?? null)
 const permissionMatrix = ref(getPermissionsMatrix())
+const isLoggingOut = ref(false)
+const toast = useToast()
 
 const roleLabels = {
   OWNER: 'Właściciel',
@@ -111,9 +114,18 @@ const toggleCollapse = () => {
   emit('toggle-collapse')
 }
 
-const handleLogout = () => {
-  logout()
-  router.push({ name: 'login' })
+const handleLogout = async () => {
+  if (isLoggingOut.value) return
+  if (!window.confirm('Czy na pewno chcesz się wylogować?')) return
+
+  isLoggingOut.value = true
+  try {
+    await logout()
+    toast.info('Sesja została zakończona.', 'Wylogowano')
+    router.push({ name: 'login' })
+  } finally {
+    isLoggingOut.value = false
+  }
 }
 
 onMounted(() => {

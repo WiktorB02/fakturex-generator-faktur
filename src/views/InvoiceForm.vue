@@ -25,6 +25,10 @@
                 </optgroup>
                 <optgroup label="Magazyn">
                   <option value="pz">PZ (przyjęcie zewnętrzne)</option>
+                  <option value="wz">WZ (wydanie zewnętrzne)</option>
+                  <option value="rw">RW (rozchód wewnętrzny)</option>
+                  <option value="mm">MM (przesunięcie międzymagazynowe)</option>
+                  <option value="inw">INW (inwentaryzacja)</option>
                 </optgroup>
                 <optgroup label="Finanse">
                   <option value="expense">Wydatek</option>
@@ -137,7 +141,7 @@
             </div>
             <div class="form-group">
               <label class="form-label">NIP</label>
-              <input v-model="counterparty.nip" type="text" class="form-control" :class="{ 'is-invalid': validated && requireCounterpartyNip && !isValidNIP(counterparty.nip) }" />
+              <input v-model="counterparty.nip" type="text" inputmode="numeric" class="form-control" :class="{ 'is-invalid': validated && requireCounterpartyNip && !isValidNIP(counterparty.nip) }" @input="counterparty.nip = sanitizeDigits(counterparty.nip, 10)" />
             </div>
             <div class="form-group">
               <label class="form-label">Adres *</label>
@@ -254,7 +258,7 @@
           </div>
 
           <button type="button" class="btn btn-primary w-full mt-lg" @click="goToPreview">
-            <i class="fa fa-save"></i> Zapisz i Podgląd
+            <i class="fa fa-save"></i> {{ isEditMode ? 'Zapisz zmiany i podgląd' : 'Zapisz i Podgląd' }}
           </button>
 
           <button type="button" class="btn btn-ghost w-full mt-sm" @click="resetForm">
@@ -268,15 +272,16 @@
 
 <script setup>
 import { ref, computed, onMounted, watch, toRaw } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { getSettings } from '@/services/settings'
-import { addDocument, commitNumber, getNextNumberPreview, getDocuments } from '@/services/documents'
+import { addDocument, commitNumber, getNextNumberPreview, getDocuments, updateDocument } from '@/services/documents'
 import { getContacts } from '@/services/contacts'
 import { getInventory, adjustInventoryStock } from '@/services/inventory'
 import { getWarehouses } from '@/services/warehouses'
 import { getPriceLists } from '@/services/priceLists'
 
 const router = useRouter()
+const route = useRoute()
 const settings = ref(getSettings())
 
 const issuer = ref({ name: '', nip: '', address: '' })
@@ -294,10 +299,13 @@ const couponCode = ref('')
 const autoWz = ref(true)
 const validated = ref(false)
 const existingDocuments = ref([])
+const editDocumentId = ref('')
 const showPaymentOptions = ref(false)
 const showAdvancedOptions = ref(false)
 const useCompanyData = ref(true)
 const autoDueDate = ref('')
+
+const isEditMode = computed(() => !!editDocumentId.value)
 
 const document = ref({
   type: 'invoice',
@@ -385,6 +393,11 @@ const applyContact = () => {
   applyPriceListToItems()
 }
 
+const sanitizeDigits = (value, maxLen = null) => {
+  const digits = String(value || '').replace(/\D/g, '')
+  return maxLen ? digits.slice(0, maxLen) : digits
+}
+
 const loadCompanyData = () => {
   issuer.value = {
     name: settings.value.company.name || '',
@@ -399,7 +412,56 @@ const loadDocuments = () => {
   existingDocuments.value = getDocuments()
 }
 
+const loadDocumentForEdit = () => {
+  const id = typeof route.query.editId === 'string' ? route.query.editId : ''
+  editDocumentId.value = id
+  if (!id) return
+
+  const doc = getDocuments().find((entry) => entry.id === id)
+  if (!doc) return
+
+  counterparty.value = {
+    name: doc.counterparty?.name || '',
+    nip: sanitizeDigits(doc.counterparty?.nip || '', 10),
+    address: doc.counterparty?.address || ''
+  }
+
+  items.value = (doc.items || []).map((item) => ({
+    description: item.description || item.name || '',
+    quantity: Number(item.quantity || 1),
+    price: Number(item.price || 0),
+    vat: String(item.vat ?? settings.value.tax.defaultVat),
+    discountPercent: Number(item.discountPercent || 0),
+    itemId: item.itemId || ''
+  }))
+
+  document.value = {
+    ...document.value,
+    ...doc.document,
+    type: doc.type,
+    number: doc.number,
+    issueDate: doc.document?.issueDate || formatToday(),
+    saleDate: doc.document?.saleDate || doc.document?.issueDate || formatToday(),
+    dueDate: doc.document?.dueDate || '',
+    paymentMethod: doc.document?.paymentMethod || settings.value.payment.paymentMethod,
+    paymentStatus: doc.document?.paymentStatus || 'unpaid',
+    notes: doc.document?.notes || '',
+    language: doc.document?.language || settings.value.template.language || 'pl',
+    currency: doc.currency || settings.value.tax.defaultCurrency
+  }
+
+  if (doc.document?.warehouseId) {
+    selectedWarehouseId.value = doc.document.warehouseId
+  }
+
+  showPaymentOptions.value = !!(doc.document?.dueDate || doc.document?.paymentMethod || doc.document?.paymentStatus)
+}
+
 const updateNumber = () => {
+  if (isEditMode.value) {
+    document.value.number = document.value.number || ''
+    return
+  }
   if (!document.value.issueDate) return
   const date = new Date(document.value.issueDate)
   document.value.number = getNextNumberPreview(document.value.type, date, settings.value)
@@ -609,7 +671,9 @@ const goToPreview = () => {
     const issueDateRaw = document.value.issueDate || formatToday()
     const issueDate = new Date(issueDateRaw)
     const safeDate = isNaN(issueDate) ? new Date() : issueDate
-    const number = commitNumber(document.value.type, safeDate, settings.value)
+    const number = isEditMode.value
+      ? (document.value.number || '')
+      : commitNumber(document.value.type, safeDate, settings.value)
     const safeName = String(counterparty.value.name || 'kontrahent')
     const filename = `${number}_${safeName.replace(/\s+/g, '_')}.pdf`
 
@@ -621,8 +685,9 @@ const goToPreview = () => {
     const itemsData = clone(items.value)
     const documentData = clone(document.value)
 
+    const docId = isEditMode.value ? editDocumentId.value : createId()
     const newDoc = {
-      id: createId(),
+      id: docId,
       type: document.value.type,
       number,
       issuer: issuerData,
@@ -645,10 +710,14 @@ const goToPreview = () => {
       filename
     }
 
-    addDocument(newDoc)
+    if (isEditMode.value) {
+      updateDocument(editDocumentId.value, newDoc)
+    } else {
+      addDocument(newDoc)
+    }
     loadDocuments()
 
-    if (autoWz.value && ['invoice', 'final', 'receipt'].includes(document.value.type)) {
+    if (!isEditMode.value && autoWz.value && ['invoice', 'final', 'receipt'].includes(document.value.type)) {
       const wzNumber = commitNumber('wz', safeDate, settings.value)
       items.value.forEach((item) => {
         if (item.itemId) adjustInventoryStock(item.itemId, -Number(item.quantity))
@@ -723,12 +792,19 @@ onMounted(() => {
   globalDiscount.value = settings.value.discounts.globalPercent || 0
   updateNumber()
   updateAutoDates()
+  loadDocumentForEdit()
 })
 
 watch([() => document.value.type, () => document.value.issueDate], () => {
   updateNumber()
   updateAutoDates()
 })
+watch(
+  () => route.query.editId,
+  () => {
+    loadDocumentForEdit()
+  }
+)
 watch(() => selectedPriceListId.value, applyPriceListToItems)
 watch(
   () => useCompanyData.value,

@@ -1,5 +1,5 @@
 import { getItem, setItem, removeItem } from '@/services/secureStore'
-import { apiUrl, hasApiBase } from '@/services/api'
+import { apiFetch, apiUrl, hasApiBase } from '@/services/api'
 
 const AUTH_KEY = 'fakturex_auth'
 const USERS_KEY = 'fakturex_users'
@@ -81,21 +81,16 @@ export const hasRole = (roles = []) => {
 const storeBackendSession = async (token, user) => {
   await setItem('apiToken', token)
 
-  const companiesResponse = await fetch(apiUrl('/companies'), {
+  const companies = await apiFetch('/companies', {
     headers: { Authorization: `Bearer ${token}` }
   })
 
-  if (!companiesResponse.ok) {
-    throw new Error('Nie udało się pobrać firm użytkownika.')
-  }
-
-  const companies = await companiesResponse.json()
   let companyId = getItem('companyId')
   if (!companyId || !companies.some((company) => company.id === companyId)) {
     if (companies.length > 0) {
       companyId = companies[0].id
     } else {
-      const createResponse = await fetch(apiUrl('/companies'), {
+      const created = await apiFetch('/companies', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -103,12 +98,6 @@ const storeBackendSession = async (token, user) => {
         },
         body: JSON.stringify({ name: user.name || user.email || 'Moja firma' })
       })
-
-      if (!createResponse.ok) {
-        throw new Error('Nie udało się utworzyć firmy.')
-      }
-
-      const created = await createResponse.json()
       companyId = created.id
     }
   }
@@ -118,17 +107,26 @@ const storeBackendSession = async (token, user) => {
 
 export const login = async (email, password) => {
   if (hasApiBase()) {
-    const response = await fetch(apiUrl('/auth/login'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
-    })
+    let payload
+    try {
+      const response = await fetch(apiUrl('/auth/login'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      })
 
-    if (!response.ok) {
-      throw new Error('Nieprawidłowy e-mail lub hasło.')
+      if (!response.ok) {
+        throw new Error('Nieprawidłowy e-mail lub hasło.')
+      }
+
+      payload = await response.json()
+    } catch (error) {
+      if (error?.message === 'Nieprawidłowy e-mail lub hasło.') {
+        throw error
+      }
+      throw new Error('Nie udało się połączyć z backendem. Sprawdź konfigurację API i połączenie sieciowe.')
     }
 
-    const payload = await response.json()
     await storeBackendSession(payload.token, payload.user)
 
     const session = {
@@ -164,10 +162,12 @@ export const login = async (email, password) => {
   return session
 }
 
-export const logout = () => {
-  removeItem(AUTH_KEY)
-  removeItem('apiToken')
-  removeItem('companyId')
+export const logout = async () => {
+  await Promise.all([
+    removeItem(AUTH_KEY),
+    removeItem('apiToken'),
+    removeItem('companyId')
+  ])
 }
 
 export const getDemoUsers = () =>

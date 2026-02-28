@@ -221,6 +221,49 @@
           </button>
         </div>
       </div>
+
+      <div class="card table-card mt-lg">
+        <h3>Dokumenty magazynowe</h3>
+        <div class="table-responsive">
+          <table v-if="warehouseDocuments.length" class="table">
+            <thead>
+              <tr>
+                <th>Typ</th>
+                <th>Numer</th>
+                <th>Data</th>
+                <th>Magazyn</th>
+                <th>Pozycja</th>
+                <th>Ilość</th>
+                <th>Status</th>
+                <th class="text-right">Akcje</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="doc in warehouseDocuments" :key="doc.id">
+                <td><span class="badge badge-secondary">{{ String(doc.type || '').toUpperCase() }}</span></td>
+                <td class="font-medium">{{ doc.number }}</td>
+                <td>{{ doc.document?.issueDate || '-' }}</td>
+                <td>{{ warehouseName(doc.document?.warehouseId) }}</td>
+                <td>{{ doc.items?.[0]?.description || '-' }}</td>
+                <td>{{ doc.items?.[0]?.quantity ?? '-' }}</td>
+                <td>
+                  <span class="badge" :class="doc.document?.completed ? 'badge-success' : 'badge-warning'">
+                    {{ doc.document?.completed ? 'Ogarnięte' : 'Do ogarnięcia' }}
+                  </span>
+                </td>
+                <td class="text-right actions-cell">
+                  <button class="btn btn-sm btn-secondary" @click="toggleHandled(doc)">
+                    {{ doc.document?.completed ? 'Cofnij' : 'Oznacz' }}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div v-else class="empty-state">
+            <p>Brak dokumentów magazynowych.</p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Tab Content: Reservations -->
@@ -455,7 +498,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getContacts } from '@/services/contacts'
 import { addInventoryItem, getInventory, removeInventoryItem, updateInventoryItem } from '@/services/inventory'
-import { addDocument, commitNumber } from '@/services/documents'
+import { addDocument, commitNumber, getDocuments, updateDocument } from '@/services/documents'
 import { getSettings } from '@/services/settings'
 import { exportCsv, parseCsv } from '@/utils/csv'
 import { addWarehouse, getWarehouses, removeWarehouse, updateWarehouse } from '@/services/warehouses'
@@ -474,6 +517,7 @@ const fileInput = ref(null)
 const warehouseFilter = ref('')
 const editingWarehouseId = ref('')
 const currentTab = ref('inventory')
+const warehouseDocuments = ref([])
 
 const tabs = [
   { id: 'inventory', label: 'Stany magazynowe', icon: 'fa fa-cubes' },
@@ -562,6 +606,9 @@ const loadData = () => {
   contacts.value = getContacts()
   warehouses.value = getWarehouses()
   reservations.value = getReservations()
+  warehouseDocuments.value = (getDocuments() || [])
+    .filter((doc) => ['pz', 'wz', 'rw', 'mm', 'inw'].includes(doc.type))
+    .sort((a, b) => String(b.document?.issueDate || '').localeCompare(String(a.document?.issueDate || '')))
   if (!itemForm.value.warehouseId && warehouses.value.length) {
     itemForm.value.warehouseId = warehouses.value[0].id
   }
@@ -574,6 +621,11 @@ const loadData = () => {
   if (!batchForm.value.warehouseId && warehouses.value.length) {
     batchForm.value.warehouseId = warehouses.value[0].id
   }
+}
+
+const toggleHandled = (doc) => {
+  updateDocument(doc.id, { document: { completed: !doc.document?.completed } })
+  loadData()
 }
 
 const toggleItemForm = () => {
@@ -928,7 +980,8 @@ const createMovement = () => {
       saleDate: movement.value.date,
       notes: movement.value.note,
       warehouseId: movement.value.warehouseId,
-      toWarehouseId: movement.value.toWarehouseId
+      toWarehouseId: movement.value.toWarehouseId,
+      completed: false
     },
     items: [
       {
@@ -960,6 +1013,7 @@ const createMovement = () => {
    // Switch to inventory tab to see changes or stay?
    // Maybe show success message
    alert('Dokument utworzony pomyślnie.')
+   loadData()
  }
 
  onMounted(loadData)
@@ -970,6 +1024,10 @@ const createMovement = () => {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-lg);
+}
+
+.mt-lg {
+  margin-top: var(--spacing-lg);
 }
 
 .actions-bar {

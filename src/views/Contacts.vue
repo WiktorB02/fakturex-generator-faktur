@@ -42,7 +42,7 @@
 
         <div class="form-group">
           <label class="form-label">NIP</label>
-          <input v-model.trim="form.nip" type="text" class="form-control" />
+          <input v-model.trim="form.nip" type="text" inputmode="numeric" class="form-control" @input="form.nip = sanitizeDigits(form.nip, 10)" />
         </div>
 
         <div class="form-group">
@@ -265,11 +265,22 @@ const resetForm = () => {
   }
 }
 
+const sanitizeDigits = (value, maxLen = null) => {
+  const digits = String(value || '').replace(/\D/g, '')
+  return maxLen ? digits.slice(0, maxLen) : digits
+}
+
 const saveContact = () => {
   errors.name = ''
   if (!form.value.name.trim()) {
     errors.name = 'Nazwa kontrahenta jest wymagana.'
     toast.error('Uzupełnij wymagane pola formularza.')
+    return
+  }
+
+  form.value.nip = sanitizeDigits(form.value.nip, 10)
+  if (form.value.nip && form.value.nip.length !== 10) {
+    toast.error('NIP kontrahenta musi zawierać 10 cyfr.')
     return
   }
 

@@ -47,7 +47,7 @@
             {{ loading ? 'Logowanie...' : 'Zaloguj się' }}
           </button>
 
-          <div v-if="error" class="error-message">
+          <div v-if="error" class="error-message" role="alert" aria-live="polite">
             <i class="fa fa-exclamation-circle"></i>
             {{ error }}
           </div>
@@ -100,9 +100,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { login, getDemoUsers } from '@/services/auth'
+import { useToast } from '@/services/toast'
 
 const router = useRouter()
 const route = useRoute()
@@ -111,6 +112,10 @@ const password = ref('')
 const error = ref('')
 const loading = ref(false)
 const demoUsers = getDemoUsers()
+const toast = useToast()
+
+const isEmailValid = computed(() => /\S+@\S+\.\S+/.test(email.value))
+const isPasswordValid = computed(() => password.value.length >= 6)
 
 const roleLabels = {
   OWNER: 'Właściciel',
@@ -125,10 +130,21 @@ const fillCredentials = (user) => {
 
 const onSubmit = async () => {
   error.value = ''
+
+  if (!isEmailValid.value) {
+    error.value = 'Wprowadź poprawny adres e-mail.'
+    return
+  }
+  if (!isPasswordValid.value) {
+    error.value = 'Hasło musi zawierać co najmniej 6 znaków.'
+    return
+  }
+
   loading.value = true
 
   try {
     await login(email.value, password.value)
+    toast.success('Zalogowano pomyślnie.')
     const redirect = route.query.redirect
     router.push(redirect ? String(redirect) : { name: 'home' })
   } catch (err) {

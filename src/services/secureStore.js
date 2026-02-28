@@ -5,6 +5,7 @@ const STORE_NAME = 'kv'
 const KEY_STORAGE = 'fakturex_master_key'
 const SALT_STORAGE = 'fakturex_salt'
 const FALLBACK_PREFIX = 'fakturex_fallback_'
+const LEGACY_STATIC_KEY = 'fakturex-local-key'
 
 let dbInstance = null
 let cache = new Map()
@@ -40,9 +41,14 @@ const removeFallback = (key) => {
 
 const getMasterKey = () => {
   const existing = localStorage.getItem(KEY_STORAGE)
-  if (existing) return existing
-  const generated = 'fakturex-local-key'
+  if (existing && existing !== LEGACY_STATIC_KEY) return existing
+
+  const generated = `fakturex-local-key-${crypto.randomUUID()}`
   localStorage.setItem(KEY_STORAGE, generated)
+  if (existing === LEGACY_STATIC_KEY) {
+    localStorage.removeItem(SALT_STORAGE)
+    cryptoKey = null
+  }
   return generated
 }
 
@@ -121,7 +127,17 @@ export const initStore = async () => {
 
   const keys = await dbInstance.getAllKeys(STORE_NAME)
   const entries = await Promise.all(keys.map((key) => dbInstance.get(STORE_NAME, key)))
-  const decoded = await Promise.all(entries.map((entry) => decryptValue(entry)))
+  const decoded = await Promise.all(
+    entries.map(async (entry, index) => {
+      try {
+        return await decryptValue(entry)
+      } catch {
+        const key = keys[index]
+        await dbInstance.delete(STORE_NAME, key)
+        return readFallback(key)
+      }
+    })
+  )
 
   cache = new Map()
   keys.forEach((key, index) => {
