@@ -293,7 +293,7 @@ onBeforeUnmount(() => {
 
 .user-name {
   font-size: var(--text-sm);
-  font-weight: var(--font-semibold);
+  font-weight: var(--font-bold);
   color: var(--secondary-900);
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -302,7 +302,8 @@ onBeforeUnmount(() => {
 
 .user-role {
   font-size: var(--text-xs);
-  color: var(--secondary-500);
+  color: var(--secondary-600);
+  font-weight: var(--font-medium);
 }
 
 .logout-btn {
@@ -313,6 +314,8 @@ onBeforeUnmount(() => {
   padding: var(--spacing-sm);
   border-radius: var(--radius-md);
   width: 100%;
+  font-weight: var(--font-medium);
+  transition: all var(--transition-fast);
 }
 
 .logout-btn:hover {

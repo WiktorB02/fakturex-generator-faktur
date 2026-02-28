@@ -34,14 +34,14 @@
   --info-light: #dbeafe;
 
   /* Base Application Colors - Light Mode */
-  --app-bg: #f3f4f6; /* slightly cooler light grey */
+  --app-bg: #f8fafc; /* Lighter, cleaner background for modern SaaS */
   --app-surface: #ffffff;
   --app-text: var(--secondary-900);
   --app-muted: var(--secondary-500);
   --app-border: var(--secondary-200);
-  --app-overlay: rgba(255, 255, 255, 0.8);
-  --glass-border: rgba(255, 255, 255, 0.3);
-  --shadow-color: rgb(0 0 0 / 0.05);
+  --app-overlay: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.4);
+  --shadow-color: rgb(15 23 42 / 0.04);
 
   /* --- Spacing (Comfortable Default) --- */
   --spacing-xs: 4px;
@@ -73,10 +73,10 @@
   --font-extrabold: 800;
 
   /* --- Modern Shadows (Softer, more spread) --- */
-  --shadow-sm: 0 2px 4px var(--shadow-color);
-  --shadow-md: 0 4px 12px var(--shadow-color), 0 2px 4px var(--shadow-color);
-  --shadow-lg: 0 12px 24px -4px var(--shadow-color), 0 4px 8px -4px var(--shadow-color);
-  --shadow-xl: 0 24px 48px -12px var(--shadow-color), 0 12px 24px -8px var(--shadow-color);
+  --shadow-sm: 0 2px 8px var(--shadow-color), 0 1px 2px var(--shadow-color);
+  --shadow-md: 0 8px 16px var(--shadow-color), 0 4px 8px var(--shadow-color);
+  --shadow-lg: 0 16px 32px -4px var(--shadow-color), 0 8px 16px -4px var(--shadow-color);
+  --shadow-xl: 0 32px 64px -12px var(--shadow-color), 0 16px 32px -8px var(--shadow-color);
 
   /* --- Radius (Rounded, friendly) --- */
   --radius-sm: 6px;
@@ -104,14 +104,14 @@ html.dark-mode {
   --secondary-800: #f1f5f9;
   --secondary-900: #f8fafc;
 
-  --app-bg: #09090b; /* Very dark slate/zinc */
-  --app-surface: #18181b; /* Slightly lighter card bg */
+  --app-bg: #0f172a; /* Richer dark background */
+  --app-surface: #1e293b; /* Slightly lighter card bg */
   --app-text: var(--secondary-900);
   --app-muted: var(--secondary-500);
   --app-border: var(--secondary-200);
-  --app-overlay: rgba(0, 0, 0, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --shadow-color: rgb(0 0 0 / 0.5);
+  --app-overlay: rgba(15, 23, 42, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.05);
+  --shadow-color: rgb(0 0 0 / 0.6);
 
   --success-light: rgba(16, 185, 129, 0.2);
   --warning-light: rgba(245, 158, 11, 0.2);
@@ -262,16 +262,17 @@ button {
 /* Card Component Base */
 .card {
   background: var(--app-surface);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-sm);
   padding: var(--spacing-lg);
   border: 1px solid var(--app-border);
-  transition: box-shadow var(--transition-bounce), transform var(--transition-bounce);
+  transition: box-shadow var(--transition-bounce), transform var(--transition-bounce), border-color var(--transition-fast);
 }
 
 .card:hover {
   box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  transform: translateY(-4px);
+  border-color: var(--primary-200);
 }
 
 #app {
@@ -355,6 +356,7 @@ button {
   flex-direction: column;
   gap: var(--spacing-xs);
   margin-bottom: var(--spacing-md);
+  position: relative;
 }
 
 .form-label {
@@ -362,6 +364,7 @@ button {
   font-weight: var(--font-semibold);
   color: var(--app-text);
   margin-bottom: 2px;
+  transition: color var(--transition-fast);
 }
 
 .form-control {
@@ -380,7 +383,28 @@ button {
   outline: none;
   background-color: var(--app-surface);
   border-color: var(--primary-500);
-  box-shadow: 0 0 0 4px var(--primary-100), inset 0 1px 2px rgba(0, 0, 0, 0.02);
+  box-shadow: 0 0 0 4px var(--primary-200), inset 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.form-group:focus-within .form-label {
+  color: var(--primary-600);
+}
+
+.form-error {
+  font-size: var(--text-xs);
+  color: var(--danger);
+  margin-top: 4px;
+  font-weight: var(--font-medium);
+  animation: slideDown 0.2s ease;
+}
+
+.form-control.is-invalid {
+  border-color: var(--danger);
+  background-color: var(--danger-light);
+}
+
+.form-control.is-invalid:focus {
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
 }
 
 /* --- Tables --- */
@@ -480,4 +504,60 @@ button {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+/* --- Skeleton Loaders --- */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--secondary-100) 25%,
+    var(--secondary-200) 50%,
+    var(--secondary-100) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeletonLoading 1.5s infinite;
+  border-radius: var(--radius-md);
+  color: transparent !important;
+  pointer-events: none;
+  user-select: none;
+}
+
+.skeleton * {
+  visibility: hidden;
+}
+
+.skeleton-text {
+  height: 1em;
+  margin-bottom: 0.5em;
+  border-radius: var(--radius-sm);
+  width: 100%;
+}
+
+.skeleton-text.short {
+  width: 40%;
+}
+
+.skeleton-text.medium {
+  width: 70%;
+}
+
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+}
+
+.skeleton-button {
+  height: 38px;
+  width: 120px;
+  border-radius: var(--radius-full);
+}
+
+@keyframes skeletonLoading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }

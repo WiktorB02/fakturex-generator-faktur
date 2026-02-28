@@ -33,10 +33,14 @@
       <!-- Settings Content -->
       <div class="settings-content">
         <!-- Appearance & Personalization -->
-        <section v-if="activeSection === 'appearance'" class="card">
+        <section v-if="activeSection === 'appearance'" class="card" :class="{ 'skeleton-container': isLoading }">
           <div class="card-header">
             <h3>Wygląd i personalizacja</h3>
           </div>
+          <div v-if="isLoading" class="skeleton skeleton-text medium mb-lg"></div>
+          <div v-if="isLoading" class="skeleton skeleton-text short"></div>
+
+          <template v-if="!isLoading">
 
           <div class="form-group mb-lg">
             <label class="form-label">Motyw główny (Dark Mode)</label>
@@ -80,6 +84,7 @@
               <option value="spacious">Przestronny</option>
             </select>
           </div>
+          </template>
         </section>
 
         <!-- Company -->
@@ -341,10 +346,13 @@ import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue'
 import { defaultSettings, getSettings, saveSettings as saveSettingsToStore } from '@/services/settings'
 import { getUsers, updateUserRole } from '@/services/auth'
 import { themePreferences, setDarkMode, setColorTheme, setDensity } from '@/services/theme'
+import { useToast } from '@/services/toast'
 
 const activeSection = ref('appearance')
 const users = ref([])
+const isLoading = ref(true)
 let saveTimer = null
+const toast = useToast()
 
 const colorOptions = [
   { label: 'Indygo (Domyślny)', value: 'indigo', bgClass: 'bg-indigo' },
@@ -513,10 +521,10 @@ const saveSettings = async () => {
   try {
     const payload = JSON.parse(JSON.stringify(toRaw(settings)))
     await saveSettingsToStore(payload)
-    alert('Ustawienia zapisane!')
+    toast.success('Ustawienia zapisane!')
     window.dispatchEvent(new Event('permissions-updated'))
   } catch (error) {
-    alert('Nie udało się zapisać ustawień.')
+    toast.error('Nie udało się zapisać ustawień.')
   }
 }
 
@@ -549,8 +557,11 @@ const handleLogoUpload = (event) => {
 }
 
 onMounted(() => {
-  loadSettings()
-  loadUsers()
+  setTimeout(() => {
+    loadSettings()
+    loadUsers()
+    isLoading.value = false
+  }, 400)
 })
 
 watch(settings, autoSave, { deep: true })
@@ -602,16 +613,36 @@ watch(settings, autoSave, { deep: true })
   text-align: left;
   transition: all var(--transition-fast);
   margin-bottom: 2px;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-link::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background: var(--primary-500);
+  transform: translateX(-100%);
+  transition: transform var(--transition-fast);
 }
 
 .nav-link:hover {
   background: var(--secondary-50);
   color: var(--primary-600);
+  transform: translateX(4px);
 }
 
 .nav-link.active {
   background: var(--primary-50);
   color: var(--primary-700);
+  font-weight: var(--font-bold);
+}
+
+.nav-link.active::before {
+  transform: translateX(0);
 }
 
 .nav-link i {
@@ -628,11 +659,12 @@ watch(settings, autoSave, { deep: true })
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--spacing-md);
+  gap: var(--spacing-lg);
 }
 
 .form-grid.dense {
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--spacing-md);
 }
 
 .full-width {
@@ -716,7 +748,7 @@ watch(settings, autoSave, { deep: true })
 .permissions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-lg);
+  gap: var(--spacing-xl);
 }
 
 .permission-column h4 {
@@ -724,6 +756,7 @@ watch(settings, autoSave, { deep: true })
   font-size: var(--text-sm);
   color: var(--secondary-600);
   text-transform: uppercase;
+  font-weight: var(--font-bold);
 }
 
 .permissions-list {

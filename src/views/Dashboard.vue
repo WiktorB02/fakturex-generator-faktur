@@ -9,42 +9,50 @@
     <!-- Stats Grid -->
     <section class="stats-grid">
       <div class="stat-card" v-if="canAccess('manageReports')">
-        <div class="stat-icon revenue-bg">
-          <i class="fa fa-wallet"></i>
+        <div class="stat-icon revenue-bg" :class="{ skeleton: isLoading }">
+          <i class="fa fa-wallet" v-if="!isLoading"></i>
         </div>
         <div class="stat-info">
-          <span class="stat-label">Przychód całkowity</span>
-          <span class="stat-value">{{ formatCurrency(totalRevenue) }}</span>
+          <span class="stat-label" :class="{ 'skeleton skeleton-text short': isLoading }">Przychód całkowity</span>
+          <span class="stat-value" :class="{ 'skeleton skeleton-text medium': isLoading }">
+            <template v-if="!isLoading">{{ formatCurrency(totalRevenue) }}</template>
+          </span>
         </div>
       </div>
 
       <div class="stat-card" v-if="canAccess('manageDocuments')">
-        <div class="stat-icon pending-bg">
-          <i class="fa fa-clock-o"></i>
+        <div class="stat-icon pending-bg" :class="{ skeleton: isLoading }">
+          <i class="fa fa-clock-o" v-if="!isLoading"></i>
         </div>
         <div class="stat-info">
-          <span class="stat-label">Oczekujące płatności</span>
-          <span class="stat-value">{{ pendingCount }}</span>
+          <span class="stat-label" :class="{ 'skeleton skeleton-text short': isLoading }">Oczekujące płatności</span>
+          <span class="stat-value" :class="{ 'skeleton skeleton-text medium': isLoading }">
+            <template v-if="!isLoading">{{ pendingCount }}</template>
+          </span>
         </div>
       </div>
 
       <div class="stat-card" v-if="canAccess('manageContacts')">
-        <div class="stat-icon clients-bg">
-          <i class="fa fa-users"></i>
+        <div class="stat-icon clients-bg" :class="{ skeleton: isLoading }">
+          <i class="fa fa-users" v-if="!isLoading"></i>
         </div>
         <div class="stat-info">
-          <span class="stat-label">Klienci</span>
-          <span class="stat-value">{{ clientsCount }}</span>
+          <span class="stat-label" :class="{ 'skeleton skeleton-text short': isLoading }">Klienci</span>
+          <span class="stat-value" :class="{ 'skeleton skeleton-text medium': isLoading }">
+            <template v-if="!isLoading">{{ clientsCount }}</template>
+          </span>
         </div>
       </div>
 
       <div class="stat-card">
-          <div class="stat-icon docs-bg">
-          <i class="fa fa-file-text-o"></i>
+          <div class="stat-icon docs-bg" :class="{ skeleton: isLoading }">
+          <i class="fa fa-file-text-o" v-if="!isLoading"></i>
         </div>
         <div class="stat-info">
-          <span class="stat-label">Dokumenty</span>
-          <span class="stat-value">{{ totalDocuments }}</span>
+          <span class="stat-label" :class="{ 'skeleton skeleton-text short': isLoading }">Dokumenty</span>
+          <span class="stat-value" :class="{ 'skeleton skeleton-text medium': isLoading }">
+            <template v-if="!isLoading">{{ totalDocuments }}</template>
+          </span>
         </div>
       </div>
     </section>
@@ -53,8 +61,10 @@
       <!-- Recent Activity -->
       <section class="recent-activity card" v-if="canAccess('manageDocuments')">
         <div class="section-header">
-          <h3>Ostatnie dokumenty</h3>
-          <button class="text-btn" @click="goToInvoiceList">Zobacz wszystkie</button>
+          <h3 :class="{ 'skeleton skeleton-text medium': isLoading }">
+            <template v-if="!isLoading">Ostatnie dokumenty</template>
+          </h3>
+          <button class="text-btn" @click="goToInvoiceList" v-if="!isLoading">Zobacz wszystkie</button>
         </div>
 
         <div class="table-container">
@@ -68,19 +78,29 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="doc in recentDocuments" :key="doc.id">
-                <td class="font-medium">{{ doc.number }}</td>
-                <td>{{ doc.counterparty?.name || '-' }}</td>
-                <td>{{ doc.totals?.brutto }} {{ doc.currency }}</td>
-                <td>
-                  <span class="status-badge" :class="getStatusClass(doc)">
-                    {{ getStatusLabel(doc) }}
-                  </span>
-                </td>
-              </tr>
-              <tr v-if="recentDocuments.length === 0">
-                <td colspan="4" class="text-center text-muted">Brak ostatnich dokumentów</td>
-              </tr>
+              <template v-if="isLoading">
+                <tr v-for="i in 5" :key="i">
+                  <td><div class="skeleton skeleton-text short"></div></td>
+                  <td><div class="skeleton skeleton-text medium"></div></td>
+                  <td><div class="skeleton skeleton-text short"></div></td>
+                  <td><div class="skeleton skeleton-text short"></div></td>
+                </tr>
+              </template>
+              <template v-else>
+                <tr v-for="doc in recentDocuments" :key="doc.id">
+                  <td class="font-medium">{{ doc.number }}</td>
+                  <td>{{ doc.counterparty?.name || '-' }}</td>
+                  <td>{{ doc.totals?.brutto }} {{ doc.currency }}</td>
+                  <td>
+                    <span class="status-badge" :class="getStatusClass(doc)">
+                      {{ getStatusLabel(doc) }}
+                    </span>
+                  </td>
+                </tr>
+                <tr v-if="recentDocuments.length === 0">
+                  <td colspan="4" class="text-center text-muted">Brak ostatnich dokumentów</td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
@@ -111,13 +131,13 @@
         </div>
 
         <!-- System Status / Promo (Optional Placeholder) -->
-        <div class="promo-card card">
-          <div class="promo-content">
+        <div class="promo-card card" :class="{ skeleton: isLoading }">
+          <div class="promo-content" v-if="!isLoading">
             <h4>Wersja Pro</h4>
             <p>Zaktualizuj do wersji Pro, aby uzyskać dostęp do zaawansowanych raportów.</p>
             <button class="btn-sm btn-outline">Sprawdź ofertę</button>
           </div>
-          <div class="promo-icon">
+          <div class="promo-icon" v-if="!isLoading">
             <i class="fa fa-rocket"></i>
           </div>
         </div>
@@ -130,6 +150,7 @@
 import { onBeforeUnmount, onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getSession } from '@/services/auth'
+import { useToast } from '@/services/toast'
 import { can, getPermissionsMatrix } from '@/services/permissions'
 import { getDocuments } from '@/services/documents'
 import { getContacts } from '@/services/contacts'
@@ -140,6 +161,8 @@ const permissionMatrix = ref(getPermissionsMatrix())
 
 const documents = ref([])
 const contacts = ref([])
+const isLoading = ref(true)
+const toast = useToast()
 
 // Computed Props
 const totalRevenue = computed(() => {
@@ -202,7 +225,10 @@ const loadData = () => {
 
 onMounted(() => {
   window.addEventListener('permissions-updated', refreshPermissions)
-  loadData()
+  setTimeout(() => {
+    loadData()
+    isLoading.value = false
+  }, 800)
 })
 
 onBeforeUnmount(() => {
